@@ -147,6 +147,7 @@ def _check_bs2(df: pd.DataFrame,  pt: pd.Series) -> pd.DataFrame:
 
     args:
         df: DataFrame à valider
+        pt: Filtre sur les termes préférés de `df`
 
     returns:
         DataFrame du fichier avec une colonne identifiant les
