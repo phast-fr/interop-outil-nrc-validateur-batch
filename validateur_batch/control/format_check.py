@@ -93,21 +93,6 @@ def _find_empty_cell(df: pd.DataFrame, type: "batch.BATCH_TYPE") -> pd.DataFrame
     return df
 
 
-def _sctid_is_inactive(json: Dict) -> str:
-    """Vérifie si le concept est inactif
-
-    args:
-        json: Résultat de l'opération lookup
-
-    returns:
-        "1" si le concept est inactif ou une string vide dans le cas contraire
-    """
-    p = list(
-        jsonpath.query("$.parameter[?@name == 'property'].part[?@valueCode == 'inactive']", json).pointers() # noqa
-    )[0]
-
-    return "" if next(filter(
-        lambda x: x["name"] == "value", p.resolve_parent(json)[0]))["valueBoolean"] is False else "1" # noqa
 
 
 def _validate_sctid(df: pd.DataFrame, fts: "server.Server") -> pd.DataFrame:

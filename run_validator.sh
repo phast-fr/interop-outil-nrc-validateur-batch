@@ -2,12 +2,13 @@
 
 NOW=`date '+%F_%Hh%M'`;
 CTRL_ROOT_DIR="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/contrôles"
-PHAST_SOURCE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/Workbook v2 PHAST 202602100715.xlsx"
+PHAST_SOURCE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/Workbook v2 PHAST 202602101900.xlsx"
 SIMED_SOURCE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/Fichiers SIMED modifiés/SIMED_Lot1_Perim_Int_2026-02-03_13h45_modifPHAST.xlsx"
 SIMED_LOT2_SOURCE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/Simulation livraison SIMED perimetre post intermediaire.xlsx"
 TRANFORMATION_TOOL_DIR="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/09 - Outils de production/Outil transformation des données/Debug"
 TEMPLATE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/05 - Suivi processus qualité/Formats de livraison/ms-translations-template_current.xlsx"
-PER_CONCEPT_RESULTS_FILENAME="check_results_agg_sctid.xlsx"
+CACHE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/valuesets/2026-02-05/all_batches_2026-02-05.csv"
+PER_CONCEPT_RESULTS_FILENAME="check_results_condenses.xlsx"
 
 PHAST_SOURCE_PATH_W=`wslpath -w "${PHAST_SOURCE_PATH}"`
 SIMED_SOURCE_PATH_W=`wslpath -w "${SIMED_SOURCE_PATH}"`
@@ -83,7 +84,8 @@ uv run \
     --chg "`find "${TRANSFORMATION_DIR}" -iname 'Descriptions_Changes*'`" \
     --ina "`find "${TRANSFORMATION_DIR}" -iname 'Descriptions_Inactivations*'`" \
     --login "pierre-olivier.gregoire@phast.fr" \
-    --pwd "Pierre-Olivier123*"
+    --pwd "Pierre-Olivier123*" \
+    --cache "${CACHE_PATH}"
 cp output/* "${VALIDATION_DIR}/"
 printf "Résultats du validateur copiés dans : ${VALIDATION_DIR}\n"
 ls -l "${VALIDATION_DIR}"

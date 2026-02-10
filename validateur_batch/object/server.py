@@ -7,6 +7,10 @@ INACTIVE_STATUS = 0
 ACTIVE_STATUS = 1
 NOT_FOUND_STATUS = None
 
+from typing import Dict, List
+import pandas as pd
+
+
 class Server:
     """
     Classe regroupant les interactions avec le serveur de Terminologies FHIR de votre
@@ -51,6 +55,22 @@ class Server:
     
         return [r.get("code", "")
                 for r in response.json()["expansion"].get("contains", {})]
+    
+    def _sctid_is_inactive(self, json: Dict) -> bool:
+        """Vérifie si le concept est inactif
+
+        args:
+            json: Résultat de l'opération lookup
+
+        returns:
+            True si le concept est inactif, False sinon
+        """
+        p = list(
+            jsonpath.query("$.parameter[?@name == 'property'].part[?@valueCode == 'inactive']", json).pointers() # noqa
+        )[0]
+
+        return "" if next(filter(
+            lambda x: x["name"] == "value", p.resolve_parent(json)[0]))["valueBoolean"] is False else "1" # noqa
 
     def lookup(self, sctid: str) -> str:
         """Renvoie les informations d'un concept SNOMED CT
@@ -67,6 +87,27 @@ class Server:
         response.raise_for_status()
         
         return response.json()
+    
+    def get_status(self, sctid: str) -> int|None:
+        """Donne le statut du concept `sctid`
+
+        args:
+            sctid: SCTID du concept
+
+        returns:
+            Statut du concept `sctid` : 
+                - 1 : actif
+                - 0 : inactif
+                - None : concept non trouvé
+        """
+        if self.cache is not None:
+            if sctid in self.cache["conceptId"].values:
+                return 1
+
+        json = self.lookup(sctid)
+        if self._sctid_is_inactive(json):
+            return 0
+        return 
 
     def get_fsn(self, sctid: str) -> str:
         """Donne le FSN du concept `sctid`
@@ -81,7 +122,7 @@ class Server:
             fsn = self.cache.loc[self.cache["conceptId"] == sctid, "fsn/term"]
             if not fsn.empty:
                 return fsn.iloc[0]
-            
+
         json = self.lookup(sctid)
         p = list(
             jsonpath.query("$.parameter[?@name == 'designation'].part[?@valueCoding.code == '900000000000003001']", json).pointers() # noqa
