@@ -1,0 +1,32 @@
+[project]
+name = "validateur_batch"
+version = "1.0.0"
+authors = [{name = "Maël Le Gall", email = "ans-terminologies@esante.gouv.fr"}]
+license = {text = "MIT"}
+description = "Validation des fichiers d'import en batch"
+readme = "README.md"
+dependencies = [
+    "numpy",
+    "openpyxl>=3.1.5",
+    "pandas",
+    "pytest",
+    "python-jsonpath",
+    "requests",
+    "responses",
+    "setuptools",
+]
+
+[project.scripts]
+validateur_batch = "validateur_batch:main"
+
+[project.urls]
+Homepage = "https://github.com/ansforge/interop-outil-nrc-validateur-batch"
+
+[build-system]
+requires = ["setuptools>=61.2"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["validateur_batch", "test"]
+include-package-data = false
+
