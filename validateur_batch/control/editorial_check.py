@@ -318,20 +318,23 @@ def _check_bs6(df: pd.DataFrame, bs: pd.Series, bsr: pd.Series, pt: pd.Series, s
                       how="left", left_index=True, right_index=True, validate="1:1")
     return df
 
-def _check_bs7(df: pd.DataFrame, bs: pd.Series, pt: pd.Series) -> pd.DataFrame:
+
+def _check_bs7(df: pd.DataFrame, bs: pd.Series, pt: pd.Series, syn: pd.Series) -> pd.DataFrame:
     """Identifie les descriptions ne respectant pas la règle bs7
 
     args:
         df: DataFrame à valider
         bs: Filtre sur les Body structure de `df`
+        pt: Filtre sur les termes préférés de `df`
+        syn: Filtre sur les synonymes acceptables de `df`
 
     returns:
         DataFrame du fichier avec une colonne identifiant les
         descriptions ne respectant pas la règle bs7.
     """
     idx = df.loc[pt & bs
-                & (df.loc[:, "FSN_no_sem"].str.contains(r"\bproper\b", regex=True, case=False))
-                & (~df.loc[:, "term"].str.contains(r"(?:propre|proprement dite?)", case=False))].index # noqa
+                 & (df.loc[:, "FSN_no_sem"].str.contains(r"\bproper\b", regex=True, case=False))
+                 & (~df.loc[:, "term"].str.contains(r"(?:propre|proprement dite?)", case=False))].index # noqa
 
     if not idx.empty:
         df = pd.merge(df, pd.DataFrame(data={"bs7": ["1"] * len(idx)}, index=idx),
@@ -1473,7 +1476,7 @@ def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, terminology_anato
         df = _check_bs3(df, bs, pt, syn)
         df = _check_bs5(df, bs, pt, syn)
         df = _check_bs6(df, bs, bsr, pt, syn)
-        df = _check_bs7(df, bs)
+        df = _check_bs7(df, bs, pt, syn)
         df = _check_bs8(df, pt, syn)
         df = _check_bs9(df, pt, syn)
         df = _check_bs10(df, pt, syn)
