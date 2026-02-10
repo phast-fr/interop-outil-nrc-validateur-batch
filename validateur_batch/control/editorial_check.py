@@ -443,11 +443,11 @@ def _check_bs11(df: pd.DataFrame, pt: pd.Series, syn: pd.Series) -> pd.DataFrame
 
     idx_pt_upper_arm_not_ok = df.loc[pt
                            & (df.loc[:, "FSN_no_sem"].str.contains("upper arm", regex=False, case=False)) # noqa
-                           & (~df.loc[:, "term"].str.contains("partie supérieure(?: entière)? du bras", case=False))].index # noqa
+                           & (~df.loc[:, "term"].str.contains("partie supérieure(?: (?:entière|gauche|droite))* du bras", case=False))].index # noqa
     
     idx_syn_not_ok = df.loc[syn
                            & (df.loc[:, "FSN_no_sem"].str.contains("upper arm", regex=False, case=False)) # noqa
-                           & (~df.loc[:, "term"].str.contains("bras(?: entier)?, de l'épaule au coude", case=False))].index 
+                           & (~df.loc[:, "term"].str.contains("bras(?:entier|droit|gauche))*, de l'épaule au coude", case=False))].index 
     
     idx11 = idx_limb.union(idx_pt_upper_arm_not_ok).union(idx_syn_not_ok)
 
