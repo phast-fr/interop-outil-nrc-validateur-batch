@@ -126,6 +126,26 @@ def _check_bs3(df: pd.DataFrame, bs: pd.Series, pt: pd.Series,
                       how="left", left_index=True, right_index=True, validate="1:1")
     return df
 
+def _check_bs4(df: pd.DataFrame, terminology_anatomica: pd.DataFrame, pt: pd.Series) -> pd.DataFrame:
+    """Identifie les descriptions ne respectant pas la règle bs4
+
+    args:
+        df: DataFrame à valider
+        terminology_anatomica: DataFrame contenant la terminologie anatomique
+        pt: Filtre sur les termes préférés de `df`
+
+    returns:
+        DataFrame du fichier avec une colonne identifiant les
+        descriptions ne respectant pas la règle bs4.
+    """
+    idx = df.loc[pt
+                 & (df["term"].isin(terminology_anatomica["Ancienne nomenclature"]))].index # noqa
+    
+    if not idx.empty:
+        df = pd.merge(df, pd.DataFrame(data={"bs4": ["1"] * len(idx)}, index=idx),
+                      how="left", left_index=True, right_index=True, validate="1:1")
+        
+    return df
 
 def _check_bs5(df: pd.DataFrame, bs: pd.Series) -> pd.DataFrame:
     """Identifie les descriptions ne respectant pas la règle bs5
@@ -1162,7 +1182,7 @@ def _check_regle_generique(df: pd.DataFrame, pt: pd.Series, syn: pd.Series, rege
     return df
 
 
-def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, fts: "server.Server") -> pd.DataFrame:
+def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, terminology_anatomica: pd.DataFrame, fts: "server.Server") -> pd.DataFrame:
     """Lance l'ensemble des contrôles sur le respect des règles éditoriales.
 
     args:
@@ -1215,6 +1235,7 @@ def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, fts: "server.Serv
     if not df.loc[bs].empty:
         df = _check_bs2(df,pt)
         df = _check_bs3(df, bs, pt, syn)
+        df = _check_bs4(df, terminology_anatomica, pt)
         df = _check_bs5(df, bs)
         df = _check_bs6(df, bs)
         df = _check_bs7(df, bs)

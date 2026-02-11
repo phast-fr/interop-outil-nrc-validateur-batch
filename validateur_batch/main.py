@@ -51,9 +51,7 @@ if __name__ == "__main__":
     print("Lecture des imports batch - OK")
 
     # for b in list_b:
-    #     if "Concept ID" in b.df.columns:
-    #         b.df = b.df.loc[b.df["Concept ID"] == "368148009"]
-        # b.df = b.df.head(100) # TODO : à supprimer, juste pour les tests
+    #     b.df = b.df.head(10) # TODO : à supprimer, juste pour les tests
 
     # Initialiser la preview de la snapshot de l'édition FR
     print("\n## Snapshot FR ##")
@@ -85,7 +83,9 @@ if __name__ == "__main__":
     # Vérification du respect des règles éditoriales
     print("\n## Respect des règles éditoriales ##")
     rules = pd.read_csv(os.path.join(os.path.dirname(__file__), "rules.csv"),  dtype={"en": "string", "fr": "string", "id": "string", "pt": "Int64", "syn": "Int64"}, sep=";")
-    preview = editorial_check.run_editorial_check(preview, rules, fts)
+    terminology_anatomica = pd.read_csv(os.path.join(os.path.dirname(__file__), "Terminologia Anatomica - ancienne VS nouvelle nomenclature - 012026.csv"), dtype=str, sep=";", encoding="latin-1")
+    preview = editorial_check.run_editorial_check(preview, rules, terminology_anatomica, fts )
+    
     # Vérification du respect 1 concept = 1 PT
     preview = format_check.check_pt(preview)
     # Sauvegarde du fichier
