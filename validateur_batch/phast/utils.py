@@ -14,36 +14,36 @@ def generate_excel_from_report(csv_path: str, excel_path: str) -> None:
         excel_path: Chemin vers le fichier Excel de destination.
     """
     df_chk_results = pd.read_csv(csv_path, sep=";", dtype={"conceptId": "string"} )
-    df_chk_results = df_chk_results[df_chk_results["active"]==1]  # on ne garde que les concepts actifs
+    df_chk_results = df_chk_results[df_chk_results["active"]=="1"]  # on ne garde que les concepts actifs
     
     rules_columns = [col for col in list(df_chk_results.columns) if col not in ["id", "active", "_type_", "conceptId", "FSN", "FSN_no_sem", "term", "caseSignificanceId", "acceptabilityId"]]
     all_conceptIds = df_chk_results["conceptId"].unique()
     
     df_condense = pd.DataFrame({
-    "conceptId": pd.Series(dtype="string"),
-    "FSN": pd.Series(dtype="string"),
-    "preferred term fr": pd.Series(dtype="string"),
-    "SA1 fr": pd.Series(dtype="string"),
-    "SA2 fr": pd.Series(dtype="string"),
-    "SA3 fr": pd.Series(dtype="string"),
-    "SA4 fr": pd.Series(dtype="string"),
-    "SA5 fr": pd.Series(dtype="string"),
-    "SA6 fr": pd.Series(dtype="string"),
-    "SA7 fr": pd.Series(dtype="string"),
-    "SA8 fr": pd.Series(dtype="string"),
-    "SA9 fr": pd.Series(dtype="string"),
-    "SA10 fr": pd.Series(dtype="string"),
-    "errors": pd.Series(dtype="string"),
-    "errors_PT": pd.Series(dtype="string"),
-    "errors_AS1": pd.Series(dtype="string"),
-    "errors_AS2": pd.Series(dtype="string"),
-    "errors_AS3": pd.Series(dtype="string"),
-    "errors_AS4": pd.Series(dtype="string"),
-    "errors_AS5": pd.Series(dtype="string"),
-    "errors_AS6": pd.Series(dtype="string"),
-    "errors_AS7": pd.Series(dtype="string"),
-    "errors_AS8": pd.Series(dtype="string"),
-    "errors_AS9": pd.Series(dtype="string")
+        "conceptId": pd.Series(dtype="string"),
+        "FSN": pd.Series(dtype="string"),
+        "preferred term fr": pd.Series(dtype="string"),
+        "SA1 fr": pd.Series(dtype="string"),
+        "SA2 fr": pd.Series(dtype="string"),
+        "SA3 fr": pd.Series(dtype="string"),
+        "SA4 fr": pd.Series(dtype="string"),
+        "SA5 fr": pd.Series(dtype="string"),
+        "SA6 fr": pd.Series(dtype="string"),
+        "SA7 fr": pd.Series(dtype="string"),
+        "SA8 fr": pd.Series(dtype="string"),
+        "SA9 fr": pd.Series(dtype="string"),
+        "SA10 fr": pd.Series(dtype="string"),
+        "errors": pd.Series(dtype="string"),
+        "errors_PT": pd.Series(dtype="string"),
+        "errors_AS1": pd.Series(dtype="string"),
+        "errors_AS2": pd.Series(dtype="string"),
+        "errors_AS3": pd.Series(dtype="string"),
+        "errors_AS4": pd.Series(dtype="string"),
+        "errors_AS5": pd.Series(dtype="string"),
+        "errors_AS6": pd.Series(dtype="string"),
+        "errors_AS7": pd.Series(dtype="string"),
+        "errors_AS8": pd.Series(dtype="string"),
+        "errors_AS9": pd.Series(dtype="string")
     })
 
     for conceptId in all_conceptIds:
