@@ -149,6 +149,5 @@ if __name__ == "__main__":
     # Affichage des statistiques de vérifications
     print("\n## Statistiques de vérifications ##")
     print_stats(scope, preview, list_b)
-#    stats = utils.calculate_stats(preview)
 
 
