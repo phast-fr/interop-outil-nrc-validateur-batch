@@ -14,7 +14,7 @@ def generate_excel_from_report(csv_path: str, excel_path: str) -> None:
         excel_path: Chemin vers le fichier Excel de destination.
     """
     df_chk_results = pd.read_csv(csv_path, sep=";", dtype={"conceptId": "string"} )
-    df_chk_results = df_chk_results[df_chk_results["active"]=="1"]  # on ne garde que les concepts actifs
+    df_chk_results = df_chk_results[df_chk_results["active"]==1]  # on ne garde que les concepts actifs
     
     rules_columns = [col for col in list(df_chk_results.columns) if col not in ["id", "active", "_type_", "conceptId", "FSN", "FSN_no_sem", "term", "caseSignificanceId", "acceptabilityId"]]
     all_conceptIds = df_chk_results["conceptId"].unique()
@@ -22,6 +22,8 @@ def generate_excel_from_report(csv_path: str, excel_path: str) -> None:
     df_condense = pd.DataFrame({
         "conceptId": pd.Series(dtype="string"),
         "FSN": pd.Series(dtype="string"),
+        "PT_EN": pd.Series(dtype="string"),
+        "selected_rules": pd.Series(dtype="string"),
         "preferred term fr": pd.Series(dtype="string"),
         "SA1 fr": pd.Series(dtype="string"),
         "SA2 fr": pd.Series(dtype="string"),
