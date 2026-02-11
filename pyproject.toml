@@ -5,6 +5,7 @@ authors = [{name = "Maël Le Gall", email = "ans-terminologies@esante.gouv.fr"}]
 license = {text = "MIT"}
 description = "Validation des fichiers d'import en batch"
 readme = "README.md"
+requires-python = ">= 3.12"
 dependencies = [
     "numpy",
     "openpyxl>=3.1.5",
@@ -30,3 +31,11 @@ build-backend = "setuptools.build_meta"
 packages = ["validateur_batch", "test"]
 include-package-data = false
 
+[dependency-groups]
+dev = [
+    "ruff>=0.15.0",
+]
+
+[tool.ruff]
+# Set the maximum line length to 79.
+line-length = 79
