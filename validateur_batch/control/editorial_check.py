@@ -1491,6 +1491,7 @@ def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, terminology_anato
     if not df.loc[bs].empty:
         df = _check_bs2(df, pt)
         df = _check_bs3(df, bs, pt, syn)
+        df = _check_bs4(df, terminology_anatomica, pt)
         df = _check_bs5(df, bs, pt, syn)
         df = _check_bs6(df, bs, bsr, pt, syn)
         df = _check_bs7(df, bs, pt, syn)
