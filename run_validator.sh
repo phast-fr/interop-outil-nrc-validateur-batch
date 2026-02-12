@@ -2,7 +2,7 @@
 
 NOW=`date '+%F_%Hh%M'`;
 CTRL_ROOT_DIR="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/contrôles"
-PHAST_SOURCE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/Workbook v2 PHAST 202602101900.xlsx"
+PHAST_SOURCE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/Workbook v2 PHAST 2026021215h15.xlsx"
 SIMED_SOURCE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/Fichiers SIMED modifiés/SIMED_Lot1_Perim_Int_2026-02-03_13h45_modifPHAST.xlsx"
 SIMED_LOT2_SOURCE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/Simulation livraison SIMED perimetre post intermediaire.xlsx"
 TRANFORMATION_TOOL_DIR="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/09 - Outils de production/Outil transformation des données/Debug"
@@ -85,7 +85,8 @@ uv run \
     --ina "`find "${TRANSFORMATION_DIR}" -iname 'Descriptions_Inactivations*'`" \
     --login "pierre-olivier.gregoire@phast.fr" \
     --pwd "Pierre-Olivier123*" \
-    --cache "${CACHE_PATH}"
+    --cache "${CACHE_PATH}" \
+    --scope "scope.json"
 cp output/* "${VALIDATION_DIR}/"
 printf "Résultats du validateur copiés dans : ${VALIDATION_DIR}\n"
 ls -l "${VALIDATION_DIR}"

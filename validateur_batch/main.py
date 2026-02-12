@@ -7,11 +7,10 @@ import pandas as pd
 
 from validateur_batch import io
 from validateur_batch.object import batch, server
-from validateur_batch.control import editorial_check, format_check
-from validateur_batch.object.scope import Scope
-from validateur_batch.control import scope_check
+from validateur_batch.control import editorial_check, format_check, scope_check
 from validateur_batch.phast import utils
-from validateur_batch.phast.stats import print_stats
+from validateur_batch.scope import Scope
+from validateur_batch.stats import print_stats
 
 if __name__ == "__main__":
     cli = argparse.ArgumentParser()
@@ -48,7 +47,7 @@ if __name__ == "__main__":
 
     # Initialisation de la classe de gestion du FTS
     fts = server.Server(args.endpoint, args.login, args.pwd, versioning=args.versioning, cache_file=args.cache)
-    
+
     # Construction du périmètre d'analyse
     if args.scope is not None:
         print("\n## Construction du périmètre d'analyse ##")
