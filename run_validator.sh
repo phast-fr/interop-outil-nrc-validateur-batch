@@ -2,7 +2,7 @@
 
 NOW=`date '+%F_%Hh%M'`;
 CTRL_ROOT_DIR="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/contrôles"
-PHAST_SOURCE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/Workbook v2 PHAST 2026021215h15.xlsx"
+PHAST_SOURCE_PATH=`find "/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/" -maxdepth 1 -name "Workbook v2 PHAST *.xlsx"`
 SIMED_SOURCE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/Fichiers SIMED modifiés/SIMED_Lot1_Perim_Int_2026-02-03_13h45_modifPHAST.xlsx"
 SIMED_LOT2_SOURCE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/Simulation livraison SIMED perimetre post intermediaire.xlsx"
 TRANFORMATION_TOOL_DIR="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/09 - Outils de production/Outil transformation des données/Debug"
