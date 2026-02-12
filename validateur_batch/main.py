@@ -140,7 +140,7 @@ if __name__ == "__main__":
         scope_completeness = scope_check.check_scope_completeness(scope, preview)
         scope_completeness.to_csv(op.join(args.output, "scope_completeness.csv"), sep=";", index=False)
         scope_completeness.to_excel(op.join(args.output, "scope_completeness.xlsx"), index=False)
-        
+
         scope_exclusivity = scope_check.check_scope_exclusivity(scope, preview)
         scope_exclusivity.to_csv(op.join(args.output, "scope_exclusivity.csv"), sep=";", index=False)
         scope_exclusivity.to_excel(op.join(args.output, "scope_exclusivity.xlsx"), index=False)
@@ -148,6 +148,7 @@ if __name__ == "__main__":
 
     # Affichage des statistiques de vérifications
     print("\n## Statistiques de vérifications ##")
+    print_stats(scope, preview, list_b)
 #    stats = utils.calculate_stats(preview)
 
 
