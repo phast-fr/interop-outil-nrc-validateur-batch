@@ -286,31 +286,45 @@ def _check_bs10(df: pd.DataFrame, pt: pd.Series, syn: pd.Series) -> pd.DataFrame
         DataFrame du fichier avec une colonne identifiant les
         descriptions ne respectant pas la règle bs10.
     """
-    idx = df.loc[(df.loc[:, "FSN_no_sem"].str.contains("lower limb", regex=False, case=False))
+    idx_lower_limb = df.loc[(df.loc[:, "FSN_no_sem"].str.contains("lower limb", regex=False, case=False))
                             & (~df.loc[:, "term"].str.contains("membre inférieur", regex=False, case=False))].index # noqa
 
-    # idx = idx.union(df.loc[pt
-    #                        & (df.loc[:, "FSN_no_sem"].str.contains("lower leg", regex=False, case=False)) # noqa
-    #                        & (~df.loc[:, "term"].str.contains("partie inférieure(?: entière)? de la jambe", case=False))].index) # noqa
+    idx_pt_lower_leg_not_ok = df.loc[pt
+                           & (df.loc[:, "FSN_no_sem"].str.contains("lower leg", regex=False, case=False)) # noqa
+                           & (~df.loc[:, "term"].str.contains("partie inférieure(?: entière)? de la jambe", case=False))].index # noqa
 
-    # idx = idx.union(df.loc[syn
-    #                        & (df.loc[:, "FSN_no_sem"].str.contains("lower leg", regex=False, case=False)) # noqa
-    #                        & (~df.loc[:, "term"].str.contains("(?:partie basse(?: entière)? de la jambe|jambe(?: entière)?, du genou à la cheville)", case=False))].index) # noqa
+    #df.loc[syn, "term"] = df.loc[syn, "term"].str.replace("jambe", "jambon", regex=False, case=False) 
+    # df.loc[syn & (df["id"] == "1019681000241113"), "term"] = "partie basse de la jambe 1" # Cas test n°1
+    # df.loc[syn & (df["id"] == "1019701000241110"), "term"] = "partie basse de la jambe 2" # Cas test n°1
 
-    idx = df.loc[pt 
-                 & (df.loc[:, "FSN_no_sem"].str.contains("lower leg", regex=False, case=False))
-                 & (~df.loc[:, "term"].str.contains("partie inférieure de la jambe", case=False))].index
+    # syn [:] = False # Cas test n°2
     
-    idx = df.loc[syn 
-                 & (df.loc[:, "FSN_no_sem"].str.contains("lower leg", regex=False, case=False))
-                 & (~df.loc[:, "term"].str.contains("partie basse de la jambe", case=False))].index
+    # df.loc[syn & (df["id"] == "1019681000241113"), "term"] = "partie basse de la jambe" # Cas test n°4
+    # df.loc[syn & (df["id"] == "1019701000241110"), "term"] = "mollet" # Cas test n°4
+
+    idx_syn_lower_leg_not_ok = df.loc[syn
+                           & (df.loc[:, "FSN_no_sem"].str.contains("lower leg", regex=False, case=False)) # noqa
+                           & (~df.loc[:, "term"].str.contains("(?:partie basse(?: entière)? de la jambe)", case=False))].index 
     
-    idx = df.loc[syn 
-                 & (df.loc[:, "FSN_no_sem"].str.contains("lower leg", regex=False, case=False))
-                 & (~df.loc[:, "term"].str.contains("jambe, du genou à la cheville", case=False))].index
+    idx10 = idx_lower_limb.union(idx_pt_lower_leg_not_ok).union(idx_syn_lower_leg_not_ok)
+
+    if not idx10.empty:
+        df = pd.merge(df, pd.DataFrame(data={"bs10": ["1"] * len(idx10)}, index=idx10),
+                      how="left", left_index=True, right_index=True, validate="1:1")
     
-    if not idx.empty:
-        df = pd.merge(df, pd.DataFrame(data={"bs10": ["1"] * len(idx)}, index=idx),
+    df_pt_lower_leg = df.loc[pt & (df.loc[:, "FSN_no_sem"].str.contains("lower leg", regex=False, case=False))]
+    
+    df_syn_lower_leg_ok = df.loc[syn    
+                           & (df.loc[:, "FSN_no_sem"].str.contains("lower leg", regex=False, case=False)) # noqa
+                           & (df.loc[:, "term"].str.contains("(?:partie basse(?: entière)? de la jambe)", case=False))] 
+    
+    df_pt_syn_lower_leg = df_pt_lower_leg.merge(df_syn_lower_leg_ok, how = "left", on="conceptId"  )
+
+    df_pt_syn_lower_leg_no_match = df_pt_syn_lower_leg.loc[df_pt_syn_lower_leg["FSN_y"].isna()] #y
+    idx_df_pt_syn_lower_leg_no_match = df[df["FSN"].isin(df_pt_syn_lower_leg_no_match["FSN_x"].values)].index #x
+
+    if not idx_df_pt_syn_lower_leg_no_match.empty:
+        df = pd.merge(df, pd.DataFrame(data={"bs10-miss": ["1"] * len(idx_df_pt_syn_lower_leg_no_match)}, index=idx_df_pt_syn_lower_leg_no_match),
                       how="left", left_index=True, right_index=True, validate="1:1")
 
     return df
@@ -328,26 +342,36 @@ def _check_bs11(df: pd.DataFrame, pt: pd.Series, syn: pd.Series) -> pd.DataFrame
         DataFrame du fichier avec une colonne identifiant les
         descriptions ne respectant pas la règle bs11-FR.
     """
-    idx = df.loc[(df.loc[:, "FSN_no_sem"].str.contains("upper limb", regex=False, case=False))
+    idx_limb = df.loc[(df.loc[:, "FSN_no_sem"].str.contains("upper limb", regex=False, case=False))
                  & (~df.loc[:, "term"].str.contains("membre supérieur", regex=False, case=False))].index # noqa
 
-    # idx = idx.union(df.loc[pt
-    #                        & (df.loc[:, "FSN_no_sem"].str.contains("upper arm", regex=False, case=False)) # noqa
-    #                        & (~df.loc[:, "term"].str.contains("partie supérieure(?: entière)? du bras", case=False))].index) # noqa
-
-    # idx = idx.union(df.loc[syn
-    #                        & (df.loc[:, "FSN_no_sem"].str.contains("upper arm", regex=False, case=False)) # noqa
-    #                        & (~df.loc[:, "term"].str.contains("bras(?: entier)?, de l'épaule au coude", case=False))].index) # noqa
-    idx = idx.union(df.loc[pt
+    idx_pt_upper_arm_not_ok = df.loc[pt
                            & (df.loc[:, "FSN_no_sem"].str.contains("upper arm", regex=False, case=False)) # noqa
-                           & (~df.loc[:, "term"].str.contains("partie supérieure du bras", case=False))].index) # noqa
-
-    idx = idx.union(df.loc[syn
+                           & (~df.loc[:, "term"].str.contains("partie supérieure(?: entière)? du bras", case=False))].index # noqa
+    
+    idx_syn_not_ok = df.loc[syn
                            & (df.loc[:, "FSN_no_sem"].str.contains("upper arm", regex=False, case=False)) # noqa
-                           & (~df.loc[:, "term"].str.contains("bras, de l'épaule au coude", case=False))].index) # noqa
+                           & (~df.loc[:, "term"].str.contains("bras(?: entier)?, de l'épaule au coude", case=False))].index 
+    
+    idx11 = idx_limb.union(idx_pt_upper_arm_not_ok).union(idx_syn_not_ok)
 
-    if not idx.empty:
-        df = pd.merge(df, pd.DataFrame(data={"bs11": ["1"] * len(idx)}, index=idx),
+    if not idx11.empty:
+        df = pd.merge(df, pd.DataFrame(data={"bs11": ["1"] * len(idx11)}, index=idx11),
+                      how="left", left_index=True, right_index=True, validate="1:1")
+        
+    df_pt_upper_arm = df.loc[pt & (df.loc[:, "FSN_no_sem"].str.contains("upper arm", regex=False, case=False))]
+    
+    df_syn_upper_arm_ok = df.loc[syn    
+                           & (df.loc[:, "FSN_no_sem"].str.contains("upper arm", regex=False, case=False)) # noqa
+                           & (df.loc[:, "term"].str.contains("bras(?: entier)?, de l'épaule au coude", case=False))] 
+    
+    df_pt_syn_upper_arm = df_pt_upper_arm.merge(df_syn_upper_arm_ok, how = "left", on="conceptId"  )
+
+    df_pt_syn_upper_arm_no_match = df_pt_syn_upper_arm.loc[df_pt_syn_upper_arm["FSN_y"].isna()] #y
+    idx_df_pt_syn_upper_arm_no_match = df[df["FSN"].isin(df_pt_syn_upper_arm_no_match["FSN_x"].values)].index #x
+
+    if not idx_df_pt_syn_upper_arm_no_match.empty:
+        df = pd.merge(df, pd.DataFrame(data={"bs11-miss": ["1"] * len(idx_df_pt_syn_upper_arm_no_match)}, index=idx_df_pt_syn_upper_arm_no_match),
                       how="left", left_index=True, right_index=True, validate="1:1")
 
     return df
