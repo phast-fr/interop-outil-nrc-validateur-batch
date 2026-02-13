@@ -9,6 +9,9 @@ TRANFORMATION_TOOL_DIR="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservi
 TEMPLATE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/05 - Suivi processus qualité/Formats de livraison/ms-translations-template_current.xlsx"
 CACHE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/valuesets/2026-02-05/all_batches_2026-02-05.csv"
 PER_CONCEPT_RESULTS_FILENAME="check_results_condenses.xlsx"
+DELIVERY_MOD_EDT_FILENAME="ModEdtNatSnomed5kStructAnatomique202602131200.xlsx"
+DELIVERY_NON_MOD_FILENAME="LstConcRevusNonModifSnomed5kStructAnatomique202602061030.xlsx"
+DELIVERY_NOTE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/Préparation fiche de livraison/DocFicheLivraisonCompleteSnomed5kStructAnatomique202602131200.docx"
 
 PHAST_SOURCE_PATH_W=`wslpath -w "${PHAST_SOURCE_PATH}"`
 SIMED_SOURCE_PATH_W=`wslpath -w "${SIMED_SOURCE_PATH}"`
@@ -65,6 +68,18 @@ xmlstarlet ed -u "configuration/appSettings/add[@key='InputFilePath1']/@value" -
 "${TRANSFORMATION_TOOL_CPY_DIR}/ANS.TraductionsSIMED.exe" -TRADUCTION=O -CONTROLE=O
 printf "Résultats de l'outil de transformation copiés dans : ${TRANSFORMATION_DIR}\n"
 ls -l "${TRANSFORMATION_DIR}"
+
+# Préparation du dossier de livraison
+printf "\n#############################################################################\n"
+printf "Préparation du dossier de livraison...\n"
+DELIVERY_DIR="${CTRL_CURR_DIR}/06 - Delivery"
+mkdir -p "${DELIVERY_DIR}"
+docx2pdf "${DELIVERY_NOTE_PATH}" "${DELIVERY_DIR}"
+MOD_EDT_PATH=`find "${TRANSFORMATION_DIR}" -name "ConceptsRevusNonModifiés*.xlsx"`
+cp "${MOD_EDT_PATH}" "${DELIVERY_DIR}/${DELIVERY_MOD_EDT_FILENAME}"
+NON_MOD_PATH=`find "${TRANSFORMATION_DIR}" -name "Fichier sortie*.xlsx"`
+cp "${NON_MOD_PATH}" "${DELIVERY_DIR}/${DELIVERY_NON_MOD_FILENAME}"
+ls -l "${DELIVERY_DIR}"
 
 # Exécution du validateur
 printf "\n#############################################################################\n"
