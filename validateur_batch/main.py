@@ -88,6 +88,7 @@ if __name__ == "__main__":
     
     # Vérification du respect 1 concept = 1 PT
     preview = format_check.check_pt(preview)
+
     # Sauvegarde du fichier
     filepath = op.join(args.output, "check_results.csv")
     preview.to_csv(filepath, sep=";", index=False)
