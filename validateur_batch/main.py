@@ -8,6 +8,8 @@ import pandas as pd
 from validateur_batch import io
 from validateur_batch.object import batch, server
 from validateur_batch.control import editorial_check, format_check
+from validateur_batch.object.scope import Scope
+from validateur_batch.control import scope_check
 from validateur_batch.phast import utils
 
 if __name__ == "__main__":
@@ -35,10 +37,27 @@ if __name__ == "__main__":
                      help="Fichier de cache pour les données récupérées du FTS (si vide, le FTS est uilisé pour chaque requête)")
     cli.add_argument("--versioning", action="store_true",
                      help="Activer la gestion des versions SNOMED CT sur le FTS")
+    cli.add_argument("--scope", type=str,
+        help="Fichier JSON définissant les concepts constituant le périmètre d'analyse "
+        + "(si vide, les concepts présents dans les fichiers csv de transformation "
+        + "sont utilisés comme périmètre)",
+    )
+
     args = cli.parse_args()
 
     # Initialisation de la classe de gestion du FTS
     fts = server.Server(args.endpoint, args.login, args.pwd, versioning=args.versioning, cache_file=args.cache)
+    
+    # Construction du périmètre d'analyse
+    if args.scope is not None:
+        print("\n## Construction du périmètre d'analyse ##")
+        print("Construction du périmètre d'analyse à partir du fichier JSON de périmètre...", end="\r")
+        scope = Scope(args.scope, fts)
+        scope_df = scope.full_scope_df
+        print("Construction du périmètre d'analyse à partir du fichier JSON de périmètre - OK")
+    else:
+        scope = None
+        scope_df = None
 
     # Création de la liste des fichiers
     print("\n## Imports batch ##")
@@ -98,4 +117,14 @@ if __name__ == "__main__":
     print("\n## Génération du fichier Excel ##")
     utils.generate_excel_from_report(filepath, op.join(args.output, "check_results_condenses.xlsx"))
 
+  # Vérification de la complétude et de l'exclusivité du périmètre d'analyse
+    if scope is not None: 
+        print("\n## Vérification du périmètre d'analyse ##")
+        scope_completeness = scope_check.check_scope_completeness(scope, preview)
+        scope_completeness.to_csv(op.join(args.output, "scope_completeness.csv"), sep=";", index=False)
+        scope_completeness.to_excel(op.join(args.output, "scope_completeness.xlsx"), index=False)
+        scope_exclusivity = scope_check.check_scope_exclusivity(scope, preview)
+        scope_exclusivity.to_csv(op.join(args.output, "scope_exclusivity.csv"), sep=";", index=False)
+        scope_exclusivity.to_excel(op.join(args.output, "scope_exclusivity.xlsx"), index=False)
+        print("Vérification du périmètre d'analyse - OK")
 

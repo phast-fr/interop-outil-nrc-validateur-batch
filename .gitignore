@@ -5,3 +5,4 @@ __pycache__
 *.egg-info
 ar4.xlsx
 pattern.txt
+scope.json
