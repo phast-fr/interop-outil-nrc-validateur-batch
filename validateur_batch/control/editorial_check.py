@@ -244,13 +244,12 @@ def _check_bs5(df: pd.DataFrame, bs: pd.Series, pt: pd.Series) -> pd.DataFrame:
     return df
 
 
-def _check_bs6(df: pd.DataFrame, bs: pd.Series) -> pd.DataFrame:
+def _check_bs6(df: pd.DataFrame, bs: pd.Series, bsr: pd.Series) -> pd.DataFrame:
     """Identifie les descriptions ne respectant pas la règle bs6
-
     args:
         df: DataFrame à valider
         bs: Filtre sur les Body structure de `df`
-
+        bsr: Filtre sur les Body structure root de `df`
     returns:
         DataFrame du fichier avec une colonne identifiant les
         descriptions ne respectant pas la règle bs6.
@@ -258,17 +257,14 @@ def _check_bs6(df: pd.DataFrame, bs: pd.Series) -> pd.DataFrame:
     idx = df.loc[bs
                  & (df.loc[:, "FSN_no_sem"].str.contains("zone", regex=False, case=False))
                  & (~df.loc[:, "term"].str.contains("zone", regex=False, case=False))].index # noqa
-
-    idx = idx.union(df.loc[bs
-                           & (df.loc[:, "FSN_no_sem"].str.contains("area", regex=False, case=False)) # noqa
-                           & (~df.loc[:, "term"].str.contains("(?:zone|surface|aire)", case=False))].index) # noqa
-
+    
+    idx = idx.union(df.loc[bs & bsr
+                           & (df.loc[:, "FSN_no_sem"].str.contains(r"\barea\b", regex=True, case=False)) # noqa
+                           & (~df.loc[:, "term"].str.contains(r"\b(?:zone|surface|aire)\b", case=False))].index) # noqa
     if not idx.empty:
         df = pd.merge(df, pd.DataFrame(data={"bs6": ["1"] * len(idx)}, index=idx),
                       how="left", left_index=True, right_index=True, validate="1:1")
-
     return df
-
 
 def _check_bs7(df: pd.DataFrame, bs: pd.Series) -> pd.DataFrame:
     """Identifie les descriptions ne respectant pas la règle bs7
@@ -1339,7 +1335,9 @@ def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, terminology_anato
         anats = (df.loc[:, "conceptId"].isin(fts.ecl("<< 91723000")))
         df = _check_bs4(df, anats, terminology_anatomica, pt)
         df = _check_bs5(df, bs, pt)
-        df = _check_bs6(df, bs)
+        # Body surface region
+        bsr = (df.loc[:, "conceptId"].isin(fts.ecl("<< 127947003")))
+        df = _check_bs6(df, bs, bsr)
         df = _check_bs7(df, bs)
         df = _check_bs8(df, pt, syn)
         df = _check_bs9(df, pt, syn)
