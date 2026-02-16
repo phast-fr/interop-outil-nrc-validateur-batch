@@ -1,6 +1,10 @@
 import os.path as op
 import pandas as pd
 
+SHORT_ACCEPTABILITY = {
+    "PREFERRED": "PT",
+    "ACCEPTABLE": "SA"
+}
 
 def generate_excel_from_report(csv_path: str, excel_path: str) -> None:
     """Génération d'un fichier excel, condensé du résultat, pour intégration dans le fichier de travail
@@ -62,7 +66,7 @@ def generate_excel_from_report(csv_path: str, excel_path: str) -> None:
             mask = row[rules_columns] == 1
             if mask.any():
                 colonnes_en_erreur = mask[mask].index.tolist()   # seules les colonnes à True
-                term_erreurs = f"{row['term']} : {','.join(colonnes_en_erreur)}"
+                term_erreurs = f"{row['term']} ({SHORT_ACCEPTABILITY[row['acceptabilityId']]}) : {', '.join(colonnes_en_erreur)}"
                 regles_en_erreur.append(term_erreurs)
             else:
                 continue    
