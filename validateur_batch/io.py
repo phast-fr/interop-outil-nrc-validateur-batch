@@ -83,7 +83,7 @@ def read_snapshot(snapshot: str, date: str,
     # Récupérer les concepts ID des batchs de changement et inactivation + les concepts
     # ID des descriptions de remplacements d'un batch de remplacement
     scope_d = set().union(*[
-        b.df.loc[:, "Description ID"] for b in list_batch if b.type == "CHA"
+        b.df.loc[:, "Description ID"] for b in list_batch if b.type == "CHG"
     ])
     scope_d = scope_d.union(*[
         b.df.loc[:, "Description ID Or Term"] for b in list_batch if b.type == "INA"
