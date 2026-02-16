@@ -270,26 +270,27 @@ def _check_association_target(df: pd.DataFrame, fts: "server.Server") -> pd.Data
         df.loc[:, "E_association_target_inactive"] = inactive
     return df
 
+
 def check_pt(df: pd.DataFrame) -> pd.DataFrame:
     """Vérifie que chaque concept possède un seul PT.
-
     args:
         df: DataFrame à valider
-
     returns:
         DataFrame du fichier avec une colonne identifiant les concepts ayant moins ou
         plus d'un PT
     """
     df.loc[:, "E_multiple_pt"] = [""] * len(df)
 
-    pt = df.loc[df.loc[:, "acceptabilityId"] == "PREFERRED",
+    pt = df.loc[(df.loc[:, "acceptabilityId"] == "PREFERRED") & (df.loc[:, "active"] == "1"),
                 ["conceptId", "acceptabilityId"]]
-    error = pt[pt.duplicated("conceptId") == True] # noqa
-    error.loc[:, "E_multiple_pt"] = ["1"] * len(error)
+    
+    error = pt[pt.duplicated("conceptId") == True]  # noqa
 
-    df.update(error)
+    if len(error) > 0:
+        error.loc[:, "E_multiple_pt"] = ["1"] * len(error)
+        df.update(error)
+
     return df
-
 
 def run_format_check(df: pd.DataFrame, type: "batch.BATCH_TYPE",
                      fts: "server.Server") -> pd.DataFrame:
