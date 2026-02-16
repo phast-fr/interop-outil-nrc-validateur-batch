@@ -194,28 +194,27 @@ def _check_bs4(
             right_index=True,
             validate="1:1",
         )
-        
+
     return df
 
-def _check_bs5(df: pd.DataFrame, bs: pd.Series) -> pd.DataFrame:
+def _check_bs5(df: pd.DataFrame, bs: pd.Series, pt: pd.Series) -> pd.DataFrame:
     """Identifie les descriptions ne respectant pas la règle bs5
-
     args:
         df: DataFrame à valider
         bs: Filtre sur les Body structure de `df`
-
+        pt: Filtre sur les termes préférés de `df`
+        syn: Filtre sur les synonymes acceptables de `df`
     returns:
         DataFrame du fichier avec une colonne identifiant les
         descriptions ne respectant pas la règle bs5.
     """
-    idx = df.loc[bs
-                 & (df.loc[:, "FSN_no_sem"].str.contains("region", regex=False, case=False))
+    idx = df.loc[pt & bs
+                 & (df.loc[:, "FSN"].str.contains("region", regex=False, case=False))
                  & (~df.loc[:, "term"].str.contains("région", regex=False, case=False))].index # noqa
-
+    
     if not idx.empty:
         df = pd.merge(df, pd.DataFrame(data={"bs5": ["1"] * len(idx)}, index=idx),
                       how="left", left_index=True, right_index=True, validate="1:1")
-
     return df
 
 
@@ -1312,7 +1311,7 @@ def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, terminology_anato
         # Anatomical structure
         anats = (df.loc[:, "conceptId"].isin(fts.ecl("<< 91723000")))
         df = _check_bs4(df, anats, terminology_anatomica, pt)
-        df = _check_bs5(df, bs)
+        df = _check_bs5(df, bs, pt)
         df = _check_bs6(df, bs)
         df = _check_bs7(df, bs)
         df = _check_bs8(df, pt, syn)
