@@ -384,5 +384,7 @@ def run_format_check(df: pd.DataFrame, type: "batch.BATCH_TYPE",
     df = _check_acceptability(df)
     df = _check_inactivation_reason(df)
     df = _check_association_target(df, fts)
+    df = _check_verhoeff(df)
+
 
     return df
