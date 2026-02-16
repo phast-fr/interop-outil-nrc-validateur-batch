@@ -119,39 +119,43 @@ def _check_bs2(df: pd.DataFrame,  pt: pd.Series) -> pd.DataFrame:
     return df
 
 
-def _check_bs3(df: pd.DataFrame, bs: pd.Series, pt: pd.Series,
-               syn: pd.Series) -> pd.DataFrame:
+def _check_bs3(df: pd.DataFrame, bs: pd.Series, pt: pd.Series) -> pd.DataFrame:
     """Identifie les descriptions ne respectant pas la règle bs3
-
     args:
         df: DataFrame à valider
         bs: Filtre sur les Body structure de `df`
         pt: Filtre sur les termes préférés de `df`
         syn: Filtre sur les synonymes acceptables de `df`
-
     returns:
         DataFrame du fichier avec une colonne identifiant les
         descriptions ne respectant pas la règle bs3
     """
+    REGEX_ADJECTIVAL = r"(?:(?:\S*aires?)|(?:\S*ienn?e?s?)|(?:\S*iques?)|(?:\S*ales?)|(?:\S*eux)|(?:\S*euses?)|(?:\S*ales?)|(?:\S*elles?)|\S*ine?s?|(?:\S*ois(?:es)?))" # noqa
+    
     idx = df.loc[bs & pt
                  & (df.loc[:, "FSN_no_sem"].str.contains("structure", regex=False, case=False))
-                 & (df.loc[:, "term"].str.contains("structure", regex=False, case=False))].index # noqa
-
-    #idx = idx.union(df.loc[bs & syn
-    #                       & (df.loc[:, "FSN_no_sem"].str.contains("structure", regex=False, case=False)) # noqa
-    #                       & (~df.loc[:, "term"].str.contains("structure", regex=False, case=False))].index) # noqa
-
-    idx = idx.union(df.loc[bs
-                           & (df.loc[:, "FSN_no_sem"].str.contains("entire", regex=False, case=False)) # noqa
-                           & (~df.loc[:, "term"].str.contains("(?:entiers?|entières?)", case=False))].index) # noqa
-
-    idx = idx.union(df.loc[bs
-                           & (df.loc[:, "FSN_no_sem"].str.contains("part", regex=False, case=False)) # noqa
-                           & (~df.loc[:, "term"].str.contains("partie", regex=False, case=False))].index) # noqa
-
+                 & (df.loc[:, "term"].str.contains(f"structure(?!s? {REGEX_ADJECTIVAL})", regex=True, case=False))].index # noqa
+    
     if not idx.empty:
-        df = pd.merge(df, pd.DataFrame(data={"bs3": ["1"] * len(idx)}, index=idx),
+        df = pd.merge(df, pd.DataFrame(data={"bs3-struct": ["1"] * len(idx)}, index=idx),
                       how="left", left_index=True, right_index=True, validate="1:1")
+        
+    idx = df.loc[bs & pt
+                & (df.loc[:, "FSN_no_sem"].str.contains(r"\bentire\b", regex=True, case=False)) # noqa
+                & (~df.loc[:, "term"].str.contains("(?:entiers?|entières?)", case=False))].index # noqa
+    
+    if not idx.empty:
+        df = pd.merge(df, pd.DataFrame(data={"bs3-entire": ["1"] * len(idx)}, index=idx),
+                      how="left", left_index=True, right_index=True, validate="1:1")
+        
+    idx = idx.union(df.loc[bs & pt
+                           & (df.loc[:, "FSN_no_sem"].str.contains(r"\bpart\b", regex=True, case=False)) # noqa
+                           & (~df.loc[:, "term"].str.contains("partie", regex=False, case=False))].index) # noqa
+    
+    if not idx.empty:
+        df = pd.merge(df, pd.DataFrame(data={"bs3-part": ["1"] * len(idx)}, index=idx),
+                      how="left", left_index=True, right_index=True, validate="1:1")
+        
     return df
 
 def _remove_accents(s):
@@ -1334,7 +1338,7 @@ def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, terminology_anato
     # Contrôles des règles de Body Structure
     if not df.loc[bs].empty:
         df = _check_bs2(df,pt)
-        df = _check_bs3(df, bs, pt, syn)
+        df = _check_bs3(df, bs, pt)
         # Anatomical structure
         anats = (df.loc[:, "conceptId"].isin(fts.ecl("<< 91723000")))
         df = _check_bs4(df, anats, terminology_anatomica, pt)
