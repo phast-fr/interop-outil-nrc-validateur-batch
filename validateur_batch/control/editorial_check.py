@@ -1,4 +1,4 @@
-import os
+import regex
 import re
 import unicodedata
 import pandas as pd
@@ -1374,6 +1374,29 @@ def _check_or4(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+def _check_chars(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Identifie les descriptions contenant des caractères innatendus
+    args:
+        df: DataFrame à valider
+    returns:
+        DataFrame du fichier avec une colonne identifiant les
+        descriptions contenant des caractères innatendus
+    """
+    AUTHORIZED_CHARS_RE = r"^[ \p{Script=Latin}0-9,():\-\x27\/\[\]+]*\Z"
+    compiled = regex.compile(AUTHORIZED_CHARS_RE)
+    def is_authorised(s):
+        if compiled.match(s):
+            return True
+        else:
+            return False
+        
+    mask_unauthorized = ~(df["term"].apply(is_authorised))
+    if mask_unauthorized.any():
+        df["char"]="0"
+        df.loc[mask_unauthorized, "char"]="1"
+    return df
+
 def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, terminology_anatomica: pd.DataFrame, fts: "server.Server") -> pd.DataFrame:
     """Lance l'ensemble des contrôles sur le respect des règles éditoriales.
 
@@ -1421,6 +1444,9 @@ def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, terminology_anato
     # Contrôle des règles sur l'orthographe de 1990
     df = _check_or4(df)
 
+    # Contrôle des caractères innatendus
+    df = _check_chars(df)
+    
     # Correction des casses
     # correction = _get_correct_case(df.loc[df.loc[:, "caseSignificanceId"] == "CS"])
     # df.update(correction)
