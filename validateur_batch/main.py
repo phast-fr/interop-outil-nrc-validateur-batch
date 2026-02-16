@@ -50,8 +50,8 @@ if __name__ == "__main__":
     list_b = [batch.Batch(f, t) for f, t in input if f is not None]
     print("Lecture des imports batch - OK")
 
-    # for b in list_b:
-    #     b.df = b.df.loc[1710:1720] # TODO : à supprimer, juste pour les tests
+    for b in list_b:
+        b.df = b.df.loc[0:100] # TODO : à supprimer, juste pour les tests
 
     # Initialiser la preview de la snapshot de l'édition FR
     print("\n## Snapshot FR ##")
