@@ -11,6 +11,7 @@ from validateur_batch.control import editorial_check, format_check
 from validateur_batch.object.scope import Scope
 from validateur_batch.control import scope_check
 from validateur_batch.phast import utils
+from validateur_batch.phast.stats import print_stats
 
 if __name__ == "__main__":
     cli = argparse.ArgumentParser()
@@ -117,7 +118,7 @@ if __name__ == "__main__":
     print("\n## Génération du fichier Excel ##")
     utils.generate_excel_from_report(filepath, op.join(args.output, "check_results_condenses.xlsx"))
 
-  # Vérification de la complétude et de l'exclusivité du périmètre d'analyse
+    # Vérification de la complétude et de l'exclusivité du périmètre d'analyse
     if scope is not None: 
         print("\n## Vérification du périmètre d'analyse ##")
         scope_completeness = scope_check.check_scope_completeness(scope, preview)
@@ -127,4 +128,8 @@ if __name__ == "__main__":
         scope_exclusivity.to_csv(op.join(args.output, "scope_exclusivity.csv"), sep=";", index=False)
         scope_exclusivity.to_excel(op.join(args.output, "scope_exclusivity.xlsx"), index=False)
         print("Vérification du périmètre d'analyse - OK")
+
+    # Affichage des statistiques de vérifications
+    print("\n## Statistiques de vérifications ##")
+    print_stats(scope, preview, list_b)
 
