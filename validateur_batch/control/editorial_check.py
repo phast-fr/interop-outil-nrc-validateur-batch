@@ -266,7 +266,7 @@ def _check_bs6(df: pd.DataFrame, bs: pd.Series, bsr: pd.Series) -> pd.DataFrame:
                       how="left", left_index=True, right_index=True, validate="1:1")
     return df
 
-def _check_bs7(df: pd.DataFrame, bs: pd.Series) -> pd.DataFrame:
+def _check_bs7(df: pd.DataFrame, bs: pd.Series, pt: pd.Series) -> pd.DataFrame:
     """Identifie les descriptions ne respectant pas la règle bs7
 
     args:
@@ -277,15 +277,16 @@ def _check_bs7(df: pd.DataFrame, bs: pd.Series) -> pd.DataFrame:
         DataFrame du fichier avec une colonne identifiant les
         descriptions ne respectant pas la règle bs7.
     """
-    idx = df.loc[bs
-                 & (df.loc[:, "FSN_no_sem"].str.contains("proper", regex=False, case=False))
-                 & (~df.loc[:, "term"].str.contains("(?:propre|proprement dite?)", case=False))].index # noqa
+    idx = df.loc[pt & bs
+                & (df.loc[:, "FSN_no_sem"].str.contains(r"\bproper\b", regex=True, case=False))
+                & (~df.loc[:, "term"].str.contains(r"(?:propre|proprement dite?)", case=False))].index # noqa
 
     if not idx.empty:
         df = pd.merge(df, pd.DataFrame(data={"bs7": ["1"] * len(idx)}, index=idx),
                       how="left", left_index=True, right_index=True, validate="1:1")
 
     return df
+
 
 
 def _check_bs8(df: pd.DataFrame, pt: pd.Series, syn: pd.Series) -> pd.DataFrame:
@@ -1338,7 +1339,7 @@ def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, terminology_anato
         # Body surface region
         bsr = (df.loc[:, "conceptId"].isin(fts.ecl("<< 127947003")))
         df = _check_bs6(df, bs, bsr)
-        df = _check_bs7(df, bs)
+        df = _check_bs7(df, bs, pt)
         df = _check_bs8(df, pt, syn)
         df = _check_bs9(df, pt, syn)
         df = _check_bs10(df, pt, syn)
