@@ -1314,16 +1314,44 @@ def _check_regle_generique(df: pd.DataFrame, pt: pd.Series, syn: pd.Series, rege
         idx = df.loc[pt
                      & (df.loc[:, "FSN_no_sem"].str.contains(regex_en_fsn, case=False))
                      & (~df.loc[:, "term"].str.contains(regex_fr_term, case=False))].index
+        
     if is_syn == 1:
         idx = idx.union(df.loc[syn
                                & (df.loc[:, "FSN_no_sem"].str.contains(regex_en_fsn, case=False))
                                & (~df.loc[:, "term"].str.contains(regex_fr_term, case=False))].index)
+        
     if not idx.empty:
         df = pd.merge(df, pd.DataFrame(data={id_regle: ["1"] * len(idx)}, index=idx),
                       how="left", left_index=True, right_index=True, validate="1:1")
         
     return df
 
+def _check_spaces(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Identifie les descriptions contenant des caractères d'espace innatendus
+    args:
+        df: DataFrame à valider
+    returns:
+        DataFrame du fichier avec une colonne identifiant les
+        descriptions contenant des caractères d'espace innatendus
+    """
+    NON_STANDARD_SPACE_RE = r"[\u00A0\u2000-\u200A\u202F\u205F\u3000\t\n\r\f\v]"
+    # autres charactères d'espace
+    mask_special = df["term"].str.contains(NON_STANDARD_SPACE_RE, regex=True)
+    # doubles espaces
+    mask_double = df["term"].str.contains(r"(?: {2,})", regex=True)
+    # espace de début
+    mask_head = df["term"].str.contains(r"^ ", regex=True)
+    # espace de fin
+    mask_trail = df["term"].str.contains(r" $", regex=True)
+    
+    mask_errors = mask_double | mask_head | mask_trail | mask_special
+
+    if mask_errors.any():
+        df["spaces"]="0"
+        df.loc[mask_errors, "spaces"]="1"
+    
+    return df
 
 def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, terminology_anatomica: pd.DataFrame, fts: "server.Server") -> pd.DataFrame:
     """Lance l'ensemble des contrôles sur le respect des règles éditoriales.
@@ -1366,11 +1394,14 @@ def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, terminology_anato
     # Substance
     su = (df.loc[:, "FSN"].str.endswith(" (substance)"))
 
+    # Contrôle des espaces inattendus
+    df = _check_spaces(df)
+
     # Correction des casses
     # correction = _get_correct_case(df.loc[df.loc[:, "caseSignificanceId"] == "CS"])
     # df.update(correction)
     df = _check_case_significance(df)
-    
+
     # Contrôles des règles sur les articles
     df = _check_ar2(df)
     df = _check_ar4_FR(df, bs)

@@ -355,7 +355,7 @@ def run_format_check(df: pd.DataFrame, type: "batch.BATCH_TYPE",
 
     # Contrôle de la présence de cellules vides
     df = _find_empty_cell(df, type)
-    
+
     if type in ["ADD", "REP"]:
         # Contrôle des SCTID & ajout des FSN
         df = _validate_sctid(df, fts)
