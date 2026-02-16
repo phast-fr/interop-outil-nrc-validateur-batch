@@ -9,25 +9,65 @@ if TYPE_CHECKING:
     from validateur_batch.object import server
 
 
-def _get_correct_case(cs: pd.DataFrame) -> pd.DataFrame:
-    """Corrige les descriptions labelisées 'CS' en 'cI'
-
-    args:
-        cs: Descriptions labelisées comme 'CS'`
-
-    returns:
-        DataFrame avec les identifiants de descriptions comme index et
-        la correction de casse comme valeur
+def _check_case_significance(df: pd.DataFrame) -> pd.DataFrame:
     """
-    # Récupérer toutes les descriptions dont le premier mot contient une majuscule
-    # et qui sont labelisées 'CS'
-    cs = cs.loc[~cs.loc[:, "term"].str.islower()]
-    upper = cs.loc[[any(w.isupper() for w in word)
-                    for word in cs.loc[:, "term"].apply(lambda x: x.split()[0])]]
-    incorrect_case = cs.iloc[~cs.index.isin(upper.index)]
+    Identifie les descriptions dont la casse du terme ne correspond pas à leur caseSignificanceId.
+    args:
+        df: DataFrame à valider
+    returns:
+        DataFrame du fichier avec une colonne identifiant les
+        descriptions dont la casse du terme ne correspond pas à leur caseSignificanceId.
+    """
+    # Si tous les caractères du terme sont en minuscules, case significance devrait être "ci"
+    mask_ci = (
+        df.loc[:, "term"].str.islower() &
+        (df.loc[:, "caseSignificanceId"] != "ci")
+    )
 
-    return pd.DataFrame(data={"caseSignificanceId": ["cI"] * len(incorrect_case)},
-                        index=incorrect_case.index)
+    if mask_ci.any():
+        df["case-ci"] = "0"
+        df.loc[mask_ci, "case-ci"] = "1"
+
+    mask_CS = (
+        df.loc[:, "term"].str[0].str.isupper() &
+        (df.loc[:, "caseSignificanceId"] != "CS")
+    )
+
+    if mask_CS.any():
+        df["case-CS"] = "0"
+        df.loc[mask_CS, "case-CS"] = "1"
+
+    mask_cI = (
+        ~df.loc[:, "term"].str[0].str.isupper() &
+        ~df.loc[:, "term"].str.islower() & 
+        (df.loc[:, "caseSignificanceId"] != "cI")
+    )
+
+    if mask_cI.any():
+        df["case-cI"] = "0"
+        df.loc[mask_cI, "case-cI"] = "1"
+
+    return df
+
+# def _get_correct_case(cs: pd.DataFrame) -> pd.DataFrame:
+#     """Corrige les descriptions labelisées 'CS' en 'cI'
+
+#     args:
+#         cs: Descriptions labelisées comme 'CS'`
+
+#     returns:
+#         DataFrame avec les identifiants de descriptions comme index et
+#         la correction de casse comme valeur
+#     """
+#     # Récupérer toutes les descriptions dont le premier mot contient une majuscule
+#     # et qui sont labelisées 'CS'
+#     cs = cs.loc[~cs.loc[:, "term"].str.islower()]
+#     upper = cs.loc[[any(w.isupper() for w in word)
+#                     for word in cs.loc[:, "term"].apply(lambda x: x.split()[0])]]
+#     incorrect_case = cs.iloc[~cs.index.isin(upper.index)]
+
+#     return pd.DataFrame(data={"caseSignificanceId": ["cI"] * len(incorrect_case)},
+#                         index=incorrect_case.index)
 
 
 #####################
@@ -1327,9 +1367,10 @@ def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, terminology_anato
     su = (df.loc[:, "FSN"].str.endswith(" (substance)"))
 
     # Correction des casses
-    correction = _get_correct_case(df.loc[df.loc[:, "caseSignificanceId"] == "CS"])
-    df.update(correction)
-
+    # correction = _get_correct_case(df.loc[df.loc[:, "caseSignificanceId"] == "CS"])
+    # df.update(correction)
+    df = _check_case_significance(df)
+    
     # Contrôles des règles sur les articles
     df = _check_ar2(df)
     df = _check_ar4_FR(df, bs)
