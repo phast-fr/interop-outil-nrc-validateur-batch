@@ -4,9 +4,55 @@ import pandas as pd
 
 from validateur_batch.object.server import INACTIVE_STATUS 
 from typing import Dict, TYPE_CHECKING
+import validateur_batch.control.verhoeff as verhoeff
 
 if TYPE_CHECKING:
     from validateur_batch.object import batch, server
+
+def _check_verhoeff(df: pd.DataFrame) -> pd.DataFrame:
+    """Vérifie la validité des SCTID de concepts et descriptions à l'aide de l'algorithme de Verhoeff
+    args:
+        df: DataFrame à valider
+    returns:
+        DataFrame avec une colonne identifiant les lignes ayant un SCTID de concept ou de description
+        invalide selon l'algorithme de Verhoeff
+    """
+    if "Concept ID" in df.columns:
+        idx = df.loc[~df.loc[:, "Concept ID"].map(lambda x: verhoeff.validate(str(x)))].index
+        if not idx.empty:
+            df = pd.merge(df, pd.DataFrame(data={"E_concept_id_verhoeff": ["1"] * len(idx)},
+                                           index=idx),
+                          how="left", left_index=True, right_index=True, validate="1:1")
+            
+    if "Description ID" in df.columns:
+        idx = df.loc[~df.loc[:, "Description ID"].map(lambda x: verhoeff.validate(str(x)))].index
+        if not idx.empty:
+            df = pd.merge(df, pd.DataFrame(data={"E_description_id_verhoeff": ["1"] * len(idx)},
+                                           index=idx),
+                          how="left", left_index=True, right_index=True, validate="1:1")
+            
+    if "Association Target ID1" in df.columns:
+        idx = df.loc[~df.loc[:, "Association Target ID1"].map(lambda x: verhoeff.validate(str(x)))].index
+        if not idx.empty:
+            df = pd.merge(df, pd.DataFrame(data={"E_association_target_id_verhoeff": ["1"] * len(idx)},
+                                           index=idx),
+                          how="left", left_index=True, right_index=True, validate="1:1")
+            
+    if "Description ID Or Term" in df.columns:
+        idx = df.loc[~df.loc[:, "Description ID Or Term"].map(lambda x: verhoeff.validate(str(x)))].index
+        if not idx.empty:
+            df = pd.merge(df, pd.DataFrame(data={"E_description_id_or_term_verhoeff": ["1"] * len(idx)},
+                                           index=idx),
+                          how="left", left_index=True, right_index=True, validate="1:1")
+            
+    if "New Replacement Description ID" in df.columns:
+        idx = df.loc[~df.loc[:, "New Replacement Description ID"].map(lambda x: verhoeff.validate(str(x)))].index
+        if not idx.empty:
+            df = pd.merge(df, pd.DataFrame(data={"E_new_replacement_description_id_verhoeff": ["1"] * len(idx)},
+                                           index=idx),
+                          how="left", left_index=True, right_index=True, validate="1:1")   
+              
+    return df
 
 
 def _find_empty_cell(df: pd.DataFrame, type: "batch.BATCH_TYPE") -> pd.DataFrame:
@@ -304,8 +350,12 @@ def run_format_check(df: pd.DataFrame, type: "batch.BATCH_TYPE",
     returns:
         Fichier avec les résultats des contrôles
     """
+    # Contrôle de la validité des SCTID à l'aide de l'algorithme de Verhoeff
+    df = _check_verhoeff(df)
+
     # Contrôle de la présence de cellules vides
     df = _find_empty_cell(df, type)
+    
     if type in ["ADD", "REP"]:
         # Contrôle des SCTID & ajout des FSN
         df = _validate_sctid(df, fts)
