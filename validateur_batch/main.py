@@ -99,7 +99,7 @@ if __name__ == "__main__":
     # Vérification du respect des règles éditoriales
     print("\n## Respect des règles éditoriales ##")
     rules = pd.read_csv(os.path.join(os.path.dirname(__file__), "rules.csv"),  dtype={"en": "string", "fr": "string", "id": "string", "pt": "Int64", "syn": "Int64"}, sep=";")
-    terminology_anatomica = pd.read_csv(os.path.join(os.path.dirname(__file__), "Terminologia Anatomica - ancienne VS nouvelle nomenclature - 012026.csv"), dtype=str, sep=";", encoding="latin-1")
+    terminology_anatomica = pd.read_csv(os.path.join(os.path.dirname(__file__), "Terminologia Anatomica - ancienne VS nouvelle nomenclature - 012026.csv"), dtype=str, sep=";")
     preview = editorial_check.run_editorial_check(preview, rules, terminology_anatomica, fts )
     
     # Vérification du respect 1 concept = 1 PT
