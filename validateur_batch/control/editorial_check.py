@@ -1353,6 +1353,27 @@ def _check_spaces(df: pd.DataFrame) -> pd.DataFrame:
     
     return df
 
+def _check_or4(df: pd.DataFrame) -> pd.DataFrame:
+    """Identifie les descriptions ne respectant pas la règle or4.
+    args:
+        df: DataFrame à valider
+    returns:
+        DataFrame du fichier avec une colonne identifiant les
+        descriptions ne respectant pas la règle or4.
+    """
+    mask = {}
+    mask_error = pd.Series([False]*len(df), df.index)
+
+    for prefix in ["demi", "mi", "semi", "ex", "sous", "vice", "non"]:
+        mask[prefix] = df["term"].str.contains(f"\b{prefix}[^\-]", regex=True)
+        mask_error = mask_error | mask[prefix]
+    
+    if mask_error.any():
+        df["or4"] = "0"
+        df.loc[mask_error, "or4"] = "1"
+
+    return df
+
 def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, terminology_anatomica: pd.DataFrame, fts: "server.Server") -> pd.DataFrame:
     """Lance l'ensemble des contrôles sur le respect des règles éditoriales.
 
@@ -1396,6 +1417,9 @@ def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, terminology_anato
 
     # Contrôle des espaces inattendus
     df = _check_spaces(df)
+
+    # Contrôle des règles sur l'orthographe de 1990
+    df = _check_or4(df)
 
     # Correction des casses
     # correction = _get_correct_case(df.loc[df.loc[:, "caseSignificanceId"] == "CS"])
