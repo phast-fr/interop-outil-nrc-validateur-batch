@@ -1,8 +1,11 @@
 import jsonpath
 import requests
-from typing import List
+from typing import Dict, List
 import pandas as pd
 
+INACTIVE_STATUS = 0
+ACTIVE_STATUS = 1
+NOT_FOUND_STATUS = None
 
 class Server:
     """
@@ -85,3 +88,44 @@ class Server:
         )[0]
 
         return next(filter(lambda x: x["name"] == "value", p.resolve_parent(json)[0]))["valueString"] # noqa
+
+    def _sctid_is_inactive(self, json: Dict) -> bool:
+        """Vérifie si le concept est inactif
+        args:
+            json: Résultat de l'opération lookup
+        returns:
+            True si le concept est inactif, False sinon
+        """
+        p = list(
+            jsonpath.query(
+                "$.parameter[?@name == 'property'].part[?@valueCode == 'inactive']",
+                json,
+            ).pointers()  # noqa
+        )[0]
+
+        is_inactive = next(
+            filter(lambda x: x["name"] == "value", p.resolve_parent(json)[0])
+        )["valueBoolean"]
+
+        return is_inactive
+    
+    def get_status(self, sctid: str) -> int | None:
+        """Donne le statut du concept `sctid`
+        args:
+            sctid: SCTID du concept
+        returns:
+            Statut du concept `sctid` :
+                - 1 : actif
+                - 0 : inactif
+                - None : concept non trouvé
+        """
+        if self.cache is not None:
+            if sctid in self.cache["conceptId"].values:
+                return ACTIVE_STATUS
+            
+        json = self.lookup(sctid)
+        
+        if self._sctid_is_inactive(json):
+            return INACTIVE_STATUS
+        else:
+            return ACTIVE_STATUS

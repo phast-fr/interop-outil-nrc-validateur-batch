@@ -2,6 +2,7 @@ import jsonpath
 import numpy as np
 import pandas as pd
 
+from validateur_batch.object.server import INACTIVE_STATUS 
 from typing import Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -65,23 +66,20 @@ def _sctid_is_inactive(json: Dict) -> str:
 
 def _validate_sctid(df: pd.DataFrame, fts: "server.Server") -> pd.DataFrame:
     """Valide les SCTID de concepts et ajoute les FSN de chaque concept
-
     args:
         df: DataFrame à valider
         fts: Serveur de Terminologies FHIR à utiliser
-
     returns:
         DataFrame avec 2 colonnes identifiant : les SCTID de concepts inactifs et les
         FSN
     """
-    json = [fts.lookup(sctid) if sctid else "" for sctid in df.loc[:, "Concept ID"]]
-    inactive = [_sctid_is_inactive(j) if j else "" for j in json]
+    status = [fts.get_status(sctid) if sctid else "" for sctid in df.loc[:, "Concept ID"]]
+    inactive = ["1" if s == INACTIVE_STATUS else "" for s in status]
 
     if "1" in inactive:
         df.loc[:, "E_concept_inactif"] = inactive
 
     return df
-
 
 def _duplicated_term(df: pd.DataFrame, col: str) -> pd.DataFrame:
     """Vérifie s'il existe des termes dupliqués dans le fichier
@@ -245,35 +243,32 @@ def _check_inactivation_reason(df: pd.DataFrame) -> pd.DataFrame:
 def _check_association_target(df: pd.DataFrame, fts: "server.Server") -> pd.DataFrame:
     """Vérifie la présence d'un concept cible dans le cas d'une description
     inactivée pour la raison "Not semantically equivalent"
-
     args:
         df: DataFrame à valider
         fts: Serveur de Terminologies FHIR à utiliser
-
     returns:
         DataFrame avec une colonne identifiant les lignes ne définissant pas de concept
         cible
     """
     if "Association Target ID1" not in df.columns:
         return df
-
     idx = df.loc[(df.loc[:, "Inactivation Reason"] == "Not semantically equivalent")
                  & ((df.loc[:, "Association Target ID1"] == "")
                     | pd.isnull(df.loc[:, "Association Target ID1"]))].index
-
+    
     if not idx.empty:
         df = pd.merge(df, pd.DataFrame(data={"E_association_target": ["1"] * len(idx)},
                                        index=idx),
                       how="left", left_index=True, right_index=True, validate="1:1")
-
-    json = [fts.lookup(sctid) if sctid else ""
+        
+    status = [fts.get_status(sctid) if sctid else ""
             for sctid in df.loc[:, "Association Target ID1"]]
-    inactive = [_sctid_is_inactive(j) if j else "" for j in json]
+    
+    inactive = ["1" if s == INACTIVE_STATUS else "" for s in status]
+
     if "1" in inactive:
         df.loc[:, "E_association_target_inactive"] = inactive
-
     return df
-
 
 def check_pt(df: pd.DataFrame) -> pd.DataFrame:
     """Vérifie que chaque concept possède un seul PT.

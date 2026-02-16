@@ -37,8 +37,6 @@ if __name__ == "__main__":
                      help="Activer la gestion des versions SNOMED CT sur le FTS")
     args = cli.parse_args()
 
-    #utils.generate_excel_from_report(op.join(args.output, "check_results.csv"), op.join(args.output, "check_results_condenses.xlsx"))
-
     # Initialisation de la classe de gestion du FTS
     fts = server.Server(args.endpoint, args.login, args.pwd, versioning=args.versioning, cache_file=args.cache)
 
