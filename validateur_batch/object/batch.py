@@ -107,25 +107,52 @@ class Batch:
         returns:
             DataFrame avec le remplacement des descriptions du batch
         """
-        rep = self.df.loc[:, ["Concept ID", "Description ID", "New Translated Term",
-                              "Case significance", "Acceptability"]]
-        rep.set_index("Description ID", inplace=True)
-        rep.columns = ["conceptId", "term", "caseSignificanceId",
-                       "acceptabilityId"]
-        rep.loc[:, "_type_"] = ["REP"] * len(rep)
-        rep.loc[:, "active"] = ["1"] * len(rep)
+        rep = self.df.loc[
+            :,
+            [
+                "Concept ID",
+                "Description ID",
+                "New Translated Term",
+                "Case significance",
+                "Acceptability",
+                "New Replacement Description ID",
+            ],
+        ]
 
         # Inactivation des descriptions à remplacer
-        ina = rep.loc[:, ["active", "_type_"]]
-        ina.loc[:, "active"] = ["0"] * len(ina)
+        ina = rep[["Description ID"]].rename(columns={"Description ID": "id"})
+        ina["active"] = "0"
+        ina["_type_"] = "INA"
+        ina.set_index("id", inplace=True)
         preview.update(ina)
 
         # Ajout des descriptions de remplacement
-        add = rep.loc[:, ["active", "conceptId", "term", "caseSignificanceId",
-                          "acceptabilityId", "_type_"]]
-        preview.reset_index(inplace=True)
-        preview = pd.concat([preview, add], ignore_index=True)
-        preview.set_index("id", inplace=True)
+        add = (
+            rep.loc[rep["New Replacement Description ID"].str.len() == 0]
+            .rename(
+                columns={
+                    "Description ID": "id",
+                    "New Translated Term": "term",
+                    "Concept ID": "conceptId",
+                    "Case significance": "caseSignificanceId",
+                    "Acceptability": "acceptabilityId",
+                }
+            )
+            .set_index("id")
+        )
+        add["active"] = "1"
+        add["_type_"] = "REP"
+        preview.update(add)
+
+        # Promotion des descriptions de remplacement existantes
+        promote = (
+            rep.loc[rep["New Replacement Description ID"].str.len() > 0]
+            .rename(columns={"New Replacement Description ID": "id"})
+            .set_index("id")
+        )
+        promote["_type_"] = "REP"
+        promote["acceptabilityId"] = "PREFERRED"
+        preview.update(promote)
 
         return preview
 
