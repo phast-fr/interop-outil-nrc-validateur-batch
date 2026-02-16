@@ -1,3 +1,4 @@
 id;pt;syn;en;fr
-left;1;1;left;gauches?
-right;1;1;right;droite?s?
+left;1;1;\bleft\b;(?:gauches?|sinister|sinistri|sinistra|sinistrum)
+right;1;1;\bright\b;(?:droite?s?|dexter|destri|dextra|dextrae|dextrum|dextris?)
+vasc;1;1;\bvascular structure\b;\bstructures? vasculaires?\b
