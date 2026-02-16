@@ -50,6 +50,32 @@ def _check_ar2(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+def _check_ar4_FR(df: pd.DataFrame, bs: pd.DataFrame) -> pd.DataFrame:
+    """Identifie les descriptions ne respectant pas la règle ar4_FR.
+    args:
+        df: DataFrame à valider
+        bs: Filtre sur les Body structure de `df`
+    returns:
+        DataFrame du fichier avec une colonne identifiant les
+        descriptions ne respectant pas la règle ar4_FR.
+    """
+    idx_base = df.loc[bs &
+                 ~df.loc[:, "FSN_no_sem"].str.contains(r"(?:single)\b", case=False)
+                 & df.loc[:, "term"].str.contains(r"(?:d'une?\b)", case=False)].index
+    
+    if not idx_base.empty:
+        df = pd.merge(df, pd.DataFrame(data={"ar4_FR_base": ["1"] * len(idx_base)}, index=idx_base),
+                      how="left", left_index=True, right_index=True, validate="1:1")
+        
+    idx_single = df.loc[bs &
+                    df.loc[:, "FSN_no_sem"].str.contains(r"single\b", case=False)
+                    & ~df.loc[:, "term"].str.contains(r"(?:d'une?\b)", case=False)].index
+    
+    if not idx_single.empty:
+        df = pd.merge(df, pd.DataFrame(data={"ar4_FR_single": ["1"] * len(idx_single)}, index=idx_single),
+                      how="left", left_index=True, right_index=True, validate="1:1")
+        
+    return df
 
 def _check_ar6(df: pd.DataFrame, sb: pd.Series) -> pd.DataFrame:
     """Identifie les descriptions ne respectant pas la règle ar6.
@@ -1302,6 +1328,7 @@ def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, terminology_anato
 
     # Contrôles des règles sur les articles
     df = _check_ar2(df)
+    df = _check_ar4_FR(df, bs)
     df = _check_ar6(df, sb)
 
     # Contrôles des règles de Body Structure
