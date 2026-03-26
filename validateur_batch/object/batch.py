@@ -1,10 +1,9 @@
 import pandas as pd
 
-from typing import Literal, TYPE_CHECKING
+from typing import Literal
 from validateur_batch.control import format_check
 
-if TYPE_CHECKING:
-    from validateur_batch.object import server
+from validateur_batch.object import server
 
 BATCH_TYPE = Literal["VAL", "ADD", "CHG", "REP", "INA"]
 COL = {
@@ -122,7 +121,7 @@ class Batch:
         # Inactivation des descriptions à remplacer
         ina = rep[["Description ID"]].rename(columns={"Description ID": "id"})
         ina["active"] = "0"
-        ina["_type_"] = "INA"
+        ina["_type_"] = "INAREP"
         ina.set_index("id", inplace=True)
         preview.update(ina)
 
@@ -141,7 +140,7 @@ class Batch:
             .set_index("id")
         )
         add["active"] = "1"
-        add["_type_"] = "REP"
+        add["_type_"] = "REPNEW"
         preview.update(add)
 
         # Promotion des descriptions de remplacement existantes
@@ -150,7 +149,7 @@ class Batch:
             .rename(columns={"New Replacement Description ID": "id"})
             .set_index("id")
         )
-        promote["_type_"] = "REP"
+        promote["_type_"] = "REPEXIST"
         promote["acceptabilityId"] = "PREFERRED"
         preview.update(promote)
 
@@ -174,6 +173,21 @@ class Batch:
 
         # Inactivation des descriptions du batch
         preview.update(ina)
+
+        return preview
+    
+    def _apply_val(self, preview: pd.DataFrame) -> pd.DataFrame:
+        """Marque les descriptions validées en l'état dans `preview`
+
+        args:
+            preview: DataFrame contenant les descriptions d'intérêt de la snapshot dans
+                le périmètre des travaux
+
+        returns:
+            DataFrame avec descriptions validées marquées
+        """
+        # Marquage des descriptions du batch
+        preview.loc[preview["conceptId"].isin(self.df["Concept ID"]), "_type_"] = "VAL"
 
         return preview
 
@@ -201,6 +215,8 @@ class Batch:
                 preview = self._apply_rep(preview)
             case "INA":
                 preview = self._apply_ina(preview)
+            case "VAL":
+                preview = self._apply_val(preview)
         print(f"{self.type} - Application des modifications à la Snapshot - OK")
 
         return preview
