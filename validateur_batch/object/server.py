@@ -37,6 +37,8 @@ class Server:
         self.login = login
         self.password = password
 
+        self.session = requests.Session()
+
         if cache_file is not None:
             self.cache = pd.read_csv(cache_file, dtype=str)
         else:
@@ -60,21 +62,40 @@ class Server:
         Returns:
             Liste des SCTID correspondant à la requête ECL
         """
-        url = f"{self.ecl_base_url}{requests.utils.quote(ecl)}"
+        url = f"{self.endpoint}/ValueSet/$expand"
+        params = {
+            "offset": 0,
+            "url": f"http://snomed.info/sct/900000000000207008?fhir_vs=ecl/{ecl}",  # noqa
+        }
+        codes = []
+        while True:
+            response = self.session.request(
+                "GET",
+                url,
+                params=params,
+                auth=(self.login, self.password)
+                if self.login and self.password
+                else None,
+            )
+            response.raise_for_status()
+            with open(f"output/reponse_ecl_{params["offset"]}.json", "w") as file:
+                file.write(response.text)
+            total = jsonpath.match(
+                "$.expansion.total",
+                response.text,
+            ).obj
+            page_codes = jsonpath.findall(
+                "$.expansion.contains[*].code",
+                response.text,
+            )
+            codes.extend(page_codes)
+            if len(codes) < total:
+                params["offset"] = len(codes)
+            else:
+                break
 
-        response = requests.request(
-            "GET",
-            url,
-            auth=(self.login, self.password)
-            if self.login and self.password
-            else None,
-        )
-        response.raise_for_status()
+        return codes
 
-        return [
-            r.get("code", "")
-            for r in response.json()["expansion"].get("contains", {})
-        ]
 
     def _sctid_is_inactive(self, json: Dict) -> bool:
         """Vérifie si le concept est inactif
@@ -109,7 +130,7 @@ class Server:
         """
         url = f"{self.lookup_base_url}&code={sctid}"
 
-        response = requests.request(
+        response = self.session.request(
             "GET",
             url,
             auth=(self.login, self.password)
