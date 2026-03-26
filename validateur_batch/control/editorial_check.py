@@ -6,10 +6,8 @@ import unicodedata
 import re
 import regex
 
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from validateur_batch.object import server
+from validateur_batch.object import server
 
 
 def _check_case_significance(df: pd.DataFrame) -> pd.DataFrame:
@@ -173,6 +171,30 @@ def _check_chars(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+
+def _check_unicity(df: pd.DataFrame, desc_act_fr: pd.DataFrame) -> pd.DataFrame:
+    """Identifie les descriptions actives dupliquées
+
+    args:
+        df: DataFrame à valider
+        desc_act_fr : descriptions actives de l'édition nationale fr
+
+    returns:
+        DataFrame du fichier avec une colonne identifiant les
+        descriptions ne respectant la règle d'unicité
+    """
+    df_active =  df.loc[df["active"]=="1"].copy()
+
+    idx = df_active.loc[
+        (df_active["term"].duplicated(keep=False))
+    ].index
+    if not idx.empty:
+        df = pd.merge(df, pd.DataFrame(data={"duplicate": ["1"] * len(idx)}, index=idx),
+                      how="left", left_index=True, right_index=True, validate="1:1")
+        
+    return df
+
+
 def _check_ar2(df: pd.DataFrame) -> pd.DataFrame:
     """Identifie les descriptions ne respectant pas la règle ar2.
 
@@ -239,7 +261,7 @@ def _check_ar6(df: pd.DataFrame, sb: pd.Series) -> pd.DataFrame:
     return df
 
 
-def _check_ll1(df: pd.Dataframe) -> pd.Dataframe:
+def _check_ll1(df: pd.DataFrame) -> pd.DataFrame:
     """Identifie les descriptions ne respectant pas la règle ll1.
 
     args:
@@ -258,7 +280,7 @@ def _check_ll1(df: pd.Dataframe) -> pd.Dataframe:
 
     return df
 
-def _check_or4(df: pd.Dataframe) -> pd.Dataframe:
+def _check_or4(df: pd.DataFrame) -> pd.DataFrame:
     """Identifie les descriptions ne respectant pas la règle or4.
 
     args:
@@ -277,6 +299,27 @@ def _check_or4(df: pd.Dataframe) -> pd.Dataframe:
     if mask_error.any():
         df["or4"] = "0"
         df.loc[mask_error, "or4"] = "1"
+
+    return df
+
+def _check_se4(df: pd.DataFrame) -> pd.DataFrame:
+    """Identifie les descriptions ne respectant pas la règle se4
+
+    args:
+        df: DataFrame à valider
+
+    returns:
+        DataFrame du fichier avec une colonne identifiant les
+        descriptions ne respectant pas la règle se4
+    """
+    REGEX_UNIT_ATOM = r"(?:[numk]?(?:g|mol|L|m))"
+    REGEX_FORBIDDEN_SLASH = r'(?!\b(?:'+ REGEX_UNIT_ATOM + r'|et|[0-9]))/(?!(?:' + REGEX_UNIT_ATOM + r'|ou|[0-9])\b)'
+    print(REGEX_FORBIDDEN_SLASH)
+    mask_error = df["term"].str.contains(REGEX_FORBIDDEN_SLASH, regex=True)
+    
+    if mask_error.any():
+        df["se4"] = "0"
+        df.loc[mask_error, "se4"] = "1"
 
     return df
 
@@ -324,7 +367,14 @@ def _check_bs3(df: pd.DataFrame, bs: pd.Series, pt: pd.Series) -> pd.DataFrame:
     if not idx.empty:
         df = pd.merge(df, pd.DataFrame(data={"bs3-struct": ["1"] * len(idx)}, index=idx),
                       how="left", left_index=True, right_index=True, validate="1:1")
-        
+
+    # éviter structure et entier dans le même
+    idx = df.loc[bs
+                 & (df.loc[:, "term"].str.contains(f"structure.*enti[eè]", regex=True, case=False))].index # noqa
+    if not idx.empty:
+        df = pd.merge(df, pd.DataFrame(data={"bs3-struct-ent": ["1"] * len(idx)}, index=idx),
+                      how="left", left_index=True, right_index=True, validate="1:1")
+
     idx = df.loc[bs & pt
                 & (df.loc[:, "FSN_no_sem"].str.contains(r"\bentire\b", regex=True, case=False)) # noqa
                 & (~df.loc[:, "term"].str.contains("(?:entiers?|entières?)", case=False))].index # noqa
@@ -1446,99 +1496,40 @@ def _check_regle_generique(df: pd.DataFrame, pt: pd.Series, syn: pd.Series, rege
     idx = pd.Index([])
 
     if is_pt == 1:
-        idx = df.loc[pt
+        idx_pt = df.loc[pt
                      & (df.loc[:, "FSN_no_sem"].str.contains(regex_en_fsn, case=False))
                      & (~df.loc[:, "term"].str.contains(regex_fr_term, case=False))].index
+        idx = idx.union(idx_pt)
         
     if is_syn == 1:
-        idx = idx.union(df.loc[syn
-                               & (df.loc[:, "FSN_no_sem"].str.contains(regex_en_fsn, case=False))
-                               & (~df.loc[:, "term"].str.contains(regex_fr_term, case=False))].index)
-        
+        idx_syn = df.loc[syn
+                        & (df.loc[:, "FSN_no_sem"].str.contains(regex_en_fsn, case=False))
+                        & (~df.loc[:, "term"].str.contains(regex_fr_term, case=False))].index
+        idx = idx.union(idx_syn)
+
+    idx = idx.union(idx_pt).union(idx_syn)
+
     if not idx.empty:
         df = pd.merge(df, pd.DataFrame(data={id_regle: ["1"] * len(idx)}, index=idx),
                       how="left", left_index=True, right_index=True, validate="1:1")
-        
-    return df
-
-def _check_spaces(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Identifie les descriptions contenant des caractères d'espace innatendus
-    args:
-        df: DataFrame à valider
-    returns:
-        DataFrame du fichier avec une colonne identifiant les
-        descriptions contenant des caractères d'espace innatendus
-    """
-    NON_STANDARD_SPACE_RE = r"[\u00A0\u2000-\u200A\u202F\u205F\u3000\t\n\r\f\v]"
-    # autres charactères d'espace
-    mask_special = df["term"].str.contains(NON_STANDARD_SPACE_RE, regex=True)
-    # doubles espaces
-    mask_double = df["term"].str.contains(r"(?: {2,})", regex=True)
-    # espace de début
-    mask_head = df["term"].str.contains(r"^ ", regex=True)
-    # espace de fin
-    mask_trail = df["term"].str.contains(r" $", regex=True)
-    
-    mask_errors = mask_double | mask_head | mask_trail | mask_special
-
-    if mask_errors.any():
-        df["spaces"]="0"
-        df.loc[mask_errors, "spaces"]="1"
     
     return df
 
-def _check_or4(df: pd.DataFrame) -> pd.DataFrame:
-    """Identifie les descriptions ne respectant pas la règle or4.
-    args:
-        df: DataFrame à valider
-    returns:
-        DataFrame du fichier avec une colonne identifiant les
-        descriptions ne respectant pas la règle or4.
-    """
-    mask = {}
-    mask_error = pd.Series([False]*len(df), df.index)
 
-    for prefix in ["demi", "mi", "semi", "ex", "sous", "vice", "non"]:
-        mask[prefix] = df["term"].str.contains(f"\b{prefix}[^\-]", regex=True)
-        mask_error = mask_error | mask[prefix]
-    
-    if mask_error.any():
-        df["or4"] = "0"
-        df.loc[mask_error, "or4"] = "1"
-
-    return df
-
-def _check_chars(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Identifie les descriptions contenant des caractères innatendus
-    args:
-        df: DataFrame à valider
-    returns:
-        DataFrame du fichier avec une colonne identifiant les
-        descriptions contenant des caractères innatendus
-    """
-    AUTHORIZED_CHARS_RE = r"^[ \p{Script=Latin}0-9,():\-\x27\/\[\]+]*\Z"
-    compiled = regex.compile(AUTHORIZED_CHARS_RE)
-    def is_authorised(s):
-        if compiled.match(s):
-            return True
-        else:
-            return False
-        
-    mask_unauthorized = ~(df["term"].apply(is_authorised))
-    if mask_unauthorized.any():
-        df["char"]="0"
-        df.loc[mask_unauthorized, "char"]="1"
-    return df
-
-def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, terminology_anatomica: pd.DataFrame, fts: "server.Server") -> pd.DataFrame:
+def run_editorial_check(
+    df: pd.DataFrame,
+    rules: pd.DataFrame,
+    terminology_anatomica: pd.DataFrame,
+    fts: server.Server,
+    desc_act_fr: pd.DataFrame 
+) -> pd.DataFrame:
     """Lance l'ensemble des contrôles sur le respect des règles éditoriales.
 
     args:
         df: DataFrame à valider
         rules: DataFrame contenant les règles éditoriales
         fts: Serveur de Terminologies FHIR à utiliser
+        desc_act_fr: DataFrame contenant toutes les descriptions actives dans l'edition nationale française
 
     returns:
         Fichier avec les résultats des contrôles
@@ -1598,8 +1589,11 @@ def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, terminology_anato
     df = _check_ar4_FR(df, bs)
     df = _check_ar6(df, sb)
 
+    # Contrôles des séparateurs et ponctuations
+    df = _check_se4(df)
+
     # Contrôles des règles sur les ligatures
-    df = _check_ll1(df)
+    # df = _check_ll1(df)
 
     # Contrôle des règles sur l'orthographe de 1990
     df = _check_or4(df)
@@ -1674,6 +1668,8 @@ def run_editorial_check(df: pd.DataFrame, rules: pd.DataFrame, terminology_anato
     # Règles génériques issues du fichier rules.csv
     for _, rule in rules.iterrows():
         df = _check_regle_generique(df, pt, syn, rule["en"], rule["fr"], rule["id"], rule["pt"], rule["syn"])
+
+    df = _check_unicity(df, desc_act_fr)
 
     nb = len(df.columns) - nb
     status = "OK" if nb == 0 else "KO"

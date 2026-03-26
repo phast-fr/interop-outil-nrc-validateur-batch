@@ -71,7 +71,8 @@ if __name__ == "__main__":
 
     # Initialiser la preview de la snapshot de l'édition FR
     print("\n## Snapshot FR ##")
-    preview = io.read_snapshot(args.snapshot, args.date, list_b)
+    desc_act_fr = io.read_active_desc_in_fr_ed(args.snapshot, args.date)
+    preview = io.select_desc(desc_act_fr, list_b, scope)
     
     print("\n\n## Respect du format ##")
     for b in list_b:
@@ -93,26 +94,28 @@ if __name__ == "__main__":
     fsn.loc[:, "FSN"] = [fts.get_fsn(sctid) for sctid in fsn.loc[:, "conceptId"]]
     preview = pd.merge(preview, fsn, how="left", on="conceptId")
     preview["FSN_no_sem"] = preview["FSN"].str.replace(r'[\(\[].*[\)\]]$', "", regex=True)
-    preview = preview[["id", "active", "_type_", "conceptId", "FSN", "FSN_no_sem", "term",
+    preview = preview[["id", "active", "source", "_type_", "conceptId", "FSN", "FSN_no_sem", "term",
                        "caseSignificanceId", "acceptabilityId"]]
 
     # Vérification du respect des règles éditoriales
     print("\n## Respect des règles éditoriales ##")
     rules = pd.read_csv(os.path.join(os.path.dirname(__file__), "rules.csv"),  dtype={"en": "string", "fr": "string", "id": "string", "pt": "Int64", "syn": "Int64"}, sep=";")
     terminology_anatomica = pd.read_csv(os.path.join(os.path.dirname(__file__), "Terminologia Anatomica - ancienne VS nouvelle nomenclature - 012026.csv"), dtype=str, sep=";")
-    preview = editorial_check.run_editorial_check(preview, rules, terminology_anatomica, fts )
+    preview = editorial_check.run_editorial_check(preview, rules, terminology_anatomica, fts, desc_act_fr)
     
     # Vérification du respect 1 concept = 1 PT
     preview = format_check.check_pt(preview)
 
     # Sauvegarde du fichier
-    filepath = op.join(args.output, "check_results.csv")
-    preview.to_csv(filepath, sep=";", index=False)
-    print(f"\nAnalyse terminée et sauvegardée : {filepath}")
+    filepath_csv = op.join(args.output, "check_results.csv")
+    preview.to_csv(filepath_csv, sep=";", index=False)
+    filepath_xlsx = op.join(args.output, "check_results.xlsx")
+    preview.to_excel(filepath_xlsx)
+    print(f"\nAnalyse terminée et sauvegardée : {filepath_xlsx}")
 
     # Génération d'un fichier excel, condensé du résultat, pour intégration dans le fichier de travail
     print("\n## Génération du fichier Excel ##")
-    utils.generate_excel_from_report(filepath, op.join(args.output, "check_results_condenses.xlsx"))
+    utils.generate_excel_from_report(filepath_csv, op.join(args.output, "check_results_condenses.xlsx"))
 
     # Vérification de la complétude et de l'exclusivité du périmètre d'analyse
     if scope is not None: 
