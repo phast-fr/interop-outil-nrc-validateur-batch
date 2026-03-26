@@ -1,17 +1,21 @@
 #!/bin/bash
 
 NOW=`date '+%F_%Hh%M'`;
-CTRL_ROOT_DIR="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/contrôles"
-PHAST_SOURCE_PATH=`find "/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/" -maxdepth 1 -name "Workbook v2 PHAST *.xlsx"`
-SIMED_SOURCE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/Fichiers SIMED modifiés/SIMED_Lot1_Perim_Int_2026-02-03_13h45_modifPHAST.xlsx"
-SIMED_LOT2_SOURCE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/Simulation livraison SIMED perimetre post intermediaire.xlsx"
-TRANFORMATION_TOOL_DIR="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/09 - Outils de production/Outil transformation des données/Debug"
-TEMPLATE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/05 - Suivi processus qualité/Formats de livraison/ms-translations-template_current.xlsx"
-CACHE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/valuesets/2026-02-05/all_batches_2026-02-05.csv"
+
+TEAMS_WIN_ROOT='C:\Users\Pierre-OlivierGRÉGOI\phastservices\Espace partagé SIMED - PHAST - Marché ANS SNOMED-CT partagé SIMED-PHAST'
+TEAMS_UNIX_ROOT=`wslpath -u "${TEAMS_WIN_ROOT}"`
+
+CTRL_ROOT_DIR="${TEAMS_UNIX_ROOT}/06 - Production/fichiers test livraison/contrôles"
+PHAST_SOURCE_PATH=`find "${TEAMS_UNIX_ROOT}/06 - Production/fichiers test livraison/" -maxdepth 1 -name "Workbook PHAST *.xlsx"`
+SIMED_SOURCE_PATH="${TEAMS_UNIX_ROOT}/06 - Production/fichiers test livraison/Fichiers SIMED modifiés/SIMED_Lot1_Perim_Int_2026-02-03_13h45_modifPHAST.xlsx"
+SIMED_LOT2_SOURCE_PATH="${TEAMS_UNIX_ROOT}/06 - Production/fichiers test livraison/Simulation livraison SIMED perimetre post intermediaire.xlsx"
+TRANFORMATION_TOOL_DIR="${TEAMS_UNIX_ROOT}/09 - Outils de production/Outil transformation des données/Debug"
+TEMPLATE_PATH="${TEAMS_UNIX_ROOT}/05 - Suivi processus qualité/Formats de livraison/ms-translations-template_current.xlsx"
+CACHE_PATH="${TEAMS_UNIX_ROOT}/06 - Production/valuesets/2026-02-05/all_batches_2026-02-05.csv"
 PER_CONCEPT_RESULTS_FILENAME="check_results_condenses.xlsx"
 DELIVERY_MOD_EDT_FILENAME="ModEdtNatSnomed5kStructAnatomique202602131200.xlsx"
 DELIVERY_NON_MOD_FILENAME="LstConcRevusNonModifSnomed5kStructAnatomique202602131200.xlsx"
-DELIVERY_NOTE_PATH="/mnt/c/Users/Pierre-OlivierGRÉGOI/OneDrive - phastservices/SIMED/Marché ANS SNOMED-CT partagé SIMED-PHAST/06 - Production/fichiers test livraison/Préparation fiche de livraison/DocFicheLivraisonCompleteSnomed5kStructAnatomique202602131200.docx"
+DELIVERY_NOTE_PATH="${TEAMS_UNIX_ROOT}/06 - Production/fichiers test livraison/Préparation fiche de livraison/DocFicheLivraisonCompleteSnomed5kStructAnatomique202602131200.docx"
 
 PHAST_SOURCE_PATH_W=`wslpath -w "${PHAST_SOURCE_PATH}"`
 SIMED_SOURCE_PATH_W=`wslpath -w "${SIMED_SOURCE_PATH}"`
