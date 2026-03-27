@@ -1,88 +1,76 @@
-import os.path as op
 import pandas as pd
 
 SHORT_ACCEPTABILITY = {
     "PREFERRED": "PT",
     "ACCEPTABLE": "SA"
 }
+MAIN_COLUMNS = ['id', 'active', '_type_', 'conceptId', 'FSN', 'FSN_no_sem', 'term', 'caseSignificanceId', 'acceptabilityId', 'errors', 'selected_rules']
 
-def generate_excel_from_report(csv_path: str, excel_path: str) -> None:
-    """Génération d'un fichier excel, condensé du résultat, pour intégration dans le fichier de travail
 
-    args:
-        csv_path: Chemin vers check_results.csv.
-        excel_path: Chemin vers le fichier Excel de destination.
+def combine_rule_selections (row:dict) -> str:
+    selected_keys = [key for key in row.keys() if key.startswith("S_") and row[key]=="1"]
+    if len(selected_keys) > 0:
+        selection = row["term"] + f" ({SHORT_ACCEPTABILITY[row['acceptabilityId']]})" + ": " + " ".join([key[2:] for key in selected_keys])
+    else:
+        selection = pd.NA
+    return selection
+
+def combine_rule_errors (row:dict) -> str:
+    error_keys = [key for key in row.keys() if (key not in MAIN_COLUMNS) and (not key.startswith("S_")) and (not key.startswith("E_") and row[key]=="1")]
+    if len(error_keys) > 0:
+        errors = row["term"] + f" ({SHORT_ACCEPTABILITY[row['acceptabilityId']]})" + ": " + " ".join(error_keys)
+    else:
+        errors = pd.NA
+    return errors
+
+def aggregate_combined(values):
+    return ' | '.join([v for v in values if pd.notna(v)])
+
+def pt_fr(group):
+    if (group is not None) and pd.notna(group):
+        return f"{len(group) =}, {group.shape() =}"
+    return pd.NA
+
+
+def combine_results(check_result: pd.DataFrame) -> pd.DataFrame:
     """
-    df_chk_results = pd.read_csv(csv_path, sep=";", dtype="string")
-    df_chk_results = df_chk_results[df_chk_results["active"]=="1"]  # on ne garde que les concepts actifs
-    
-    rules_columns = [col for col in list(df_chk_results.columns) if col not in ["id", "active", "_type_", "conceptId", "FSN", "FSN_no_sem", "term", "caseSignificanceId", "acceptabilityId"]]
-    all_conceptIds = df_chk_results["conceptId"].unique()
-    
-    df_condense = pd.DataFrame({
-        "conceptId": pd.Series(dtype="string"),
-        "FSN": pd.Series(dtype="string"),
-        "PT_EN": pd.Series(dtype="string"),
-        "preferred term fr": pd.Series(dtype="string"),
-        "SA1 fr": pd.Series(dtype="string"),
-        "SA2 fr": pd.Series(dtype="string"),
-        "SA3 fr": pd.Series(dtype="string"),
-        "SA4 fr": pd.Series(dtype="string"),
-        "SA5 fr": pd.Series(dtype="string"),
-        "SA6 fr": pd.Series(dtype="string"),
-        "SA7 fr": pd.Series(dtype="string"),
-        "SA8 fr": pd.Series(dtype="string"),
-        "SA9 fr": pd.Series(dtype="string"),
-        "SA10 fr": pd.Series(dtype="string"),
-        "selected_rules": pd.Series(dtype="string"),
-        "errors": pd.Series(dtype="string")
-    })
+    """
+    check_result = check_result.loc[check_result["active"]=="1"]
+    check_result["PT_EN"] = ""
+    check_result["selected_rules"] = check_result.apply(combine_rule_selections, axis="columns")
+    check_result["errors"] = check_result.apply(combine_rule_errors, axis="columns")
+    check_result_agg_sctid = (
+        check_result[['conceptId', 'selected_rules', 'errors', 'FSN']]
+        .groupby("conceptId")
+        .aggregate(
+            fsn=pd.NamedAgg(column="FSN", aggfunc="first"),
+            pt_en=pd.NamedAgg(column="PT_EN", aggfunc="first"),
+            selected_rules=pd.NamedAgg(column="selected_rules", aggfunc=aggregate_combined),
+            errors=pd.NamedAgg(column="errors", aggfunc=aggregate_combined)
+        )
+    )
 
-    for conceptId in all_conceptIds:
-        df_concept = df_chk_results[df_chk_results["conceptId"] == conceptId]
-        termes_en_erreur  = ""
-        regles_en_erreur = list()
-        preferred_term_fr = df_concept[df_concept["acceptabilityId"]=="PREFERRED"]["term"].iloc[0] if len(df_concept[df_concept["acceptabilityId"]=="PREFERRED"]) > 0 else pd.NA
-        sa1_fr = df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]["term"].iloc[0] if len(df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]) > 0 else pd.NA
-        sa2_fr = df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]["term"].iloc[1] if len(df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]) > 1 else pd.NA
-        sa3_fr = df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]["term"].iloc[2] if len(df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]) > 2 else pd.NA
-        sa4_fr = df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]["term"].iloc[3] if len(df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]) > 3 else pd.NA
-        sa5_fr = df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]["term"].iloc[4] if len(df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]) > 4 else pd.NA
-        sa6_fr = df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]["term"].iloc[5] if len(df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]) > 5 else pd.NA
-        sa7_fr = df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]["term"].iloc[6] if len(df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]) > 6 else pd.NA
-        sa8_fr = df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]["term"].iloc[7] if len(df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]) > 7 else pd.NA
-        sa9_fr = df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]["term"].iloc[8] if len(df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]) > 8 else pd.NA
-        sa10_fr = df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]["term"].iloc[9] if len(df_concept[df_concept["acceptabilityId"]=="ACCEPTABLE"]) > 9 else pd.NA
+    check_result_agg_sctid
+    check_result_agg_sctid["pt_fr"] = (
+        check_result
+        .loc[check_result["acceptabilityId"]=="PREFERRED"]
+        .set_index("conceptId")
+        ["term"]
+    )
+    check_result_agg_sctid["nb_sa"] = (
+        check_result[["conceptId", "term"]]
+        .loc[check_result["acceptabilityId"]=="ACCEPTABLE"]
+        .groupby("conceptId")
+        .count()
+    )
+    for n in range(1, 11):
+        check_result_agg_sctid[f"sa{n}"] = (
+            check_result
+            .loc[check_result["acceptabilityId"]=="ACCEPTABLE"]
+            .groupby("conceptId")
+            .nth(n-1)
+            .set_index("conceptId")
+            ["term"]
+        )
 
-        for _, row in df_concept.iterrows():
-            mask = row[rules_columns] == 1
-            if mask.any():
-                colonnes_en_erreur = mask[mask].index.tolist()   # seules les colonnes à True
-                term_erreurs = f"{row['term']} ({SHORT_ACCEPTABILITY[row['acceptabilityId']]}) : {', '.join(colonnes_en_erreur)}"
-                regles_en_erreur.append(term_erreurs)
-            else:
-                continue    
-
-        termes_en_erreur += " | ".join(regles_en_erreur)    
-        
-        df_condense.loc[len(df_condense)] = [
-                    conceptId,
-                    df_concept["FSN"].iloc[0],
-                    "",
-                    preferred_term_fr,
-                    sa1_fr,
-                    sa2_fr,
-                    sa3_fr,
-                    sa4_fr,
-                    sa5_fr,
-                    sa6_fr,
-                    sa7_fr,
-                    sa8_fr,
-                    sa9_fr,
-                    sa10_fr,
-                    "",
-                    termes_en_erreur
-                    ]
-       
-    df_condense.to_excel(excel_path, index=False)
-    print(f"Fichier Excel généré : {excel_path}")
+    return check_result_agg_sctid

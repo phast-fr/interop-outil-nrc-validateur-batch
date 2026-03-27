@@ -115,7 +115,12 @@ if __name__ == "__main__":
 
     # Génération d'un fichier excel, condensé du résultat, pour intégration dans le fichier de travail
     print("\n## Génération du fichier Excel ##")
-    utils.generate_excel_from_report(filepath_csv, op.join(args.output, "check_results_condenses.xlsx"))
+    combined = utils.combine_results(preview)
+    filepath_combined = op.join(args.output, "check_results_condenses.xlsx")
+
+    combined.to_excel(filepath_combined)
+
+    #utils.generate_excel_from_report(filepath_csv, op.join(args.output, "check_results_condenses.xlsx"))
 
     # Vérification de la complétude et de l'exclusivité du périmètre d'analyse
     if scope is not None: 
