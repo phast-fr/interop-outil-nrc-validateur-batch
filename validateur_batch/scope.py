@@ -28,7 +28,7 @@ class Scope:
 
         Returns:
             pd.DataFrame: DataFrame contenant les concepts de la section spécifiée
-            avec les colonnes "section", "conceptId" et "fsn".
+            avec les colonnes "section", "conceptId", "fsn" et "pten"
 
         Raises:
             ValueError: Si la section spécifiée n'est pas trouvée dans le périmètre d'analyse.
@@ -47,6 +47,9 @@ class Scope:
         section_df["fsn"] = section_df["conceptId"].apply(
             lambda x: self.fts.get_fsn(x)
         )
+        section_df["pten"] = section_df["conceptId"].apply(
+            lambda x: self.fts.get_pten(x)
+        )
         section_df["section"] = [section_name]* len(section_df)
 
         # cache the result
@@ -56,7 +59,12 @@ class Scope:
 
     @property
     def sections(self) -> list:
-        """ Retourne la liste des sections définies dans le périmètre d'analyse. Returns: list: Liste des noms de sections définies dans le périmètre d'analyse. """
+        """ 
+        Retourne la liste des sections définies dans le périmètre d'analyse.
+        
+        Returns:
+            list: Liste des noms de sections définies dans le périmètre d'analyse.
+        """
         return [section["name"] for section in self.definitions["sections"]]
 
     @property

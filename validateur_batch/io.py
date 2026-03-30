@@ -112,9 +112,11 @@ def read_active_desc_in_fr_ed(snapshot: str, date: str) -> pd.DataFrame:
             "active": pd.CategoricalDtype(["1", "0"]),
             "conceptId": str,
             "typeId": str,
-            "term": str,
+            "term": object,
         },
-        converters={"caseSignificanceId": lambda x: CASE.get(x)},
+        converters={
+            "caseSignificanceId": lambda x: CASE.get(x)
+        },
     )
     desc = desc.loc[
         (desc.loc[:, "conceptId"].isin(concept.loc[:, "id"]))

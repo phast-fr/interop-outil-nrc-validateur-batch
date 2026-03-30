@@ -36,11 +36,10 @@ def combine_results(check_result: pd.DataFrame) -> pd.DataFrame:
     """
     """
     check_result = check_result.loc[check_result["active"]=="1"]
-    check_result["PT_EN"] = ""
     check_result["selected_rules"] = check_result.apply(combine_rule_selections, axis="columns")
     check_result["errors"] = check_result.apply(combine_rule_errors, axis="columns")
     check_result_agg_sctid = (
-        check_result[['conceptId', 'selected_rules', 'errors', 'FSN']]
+        check_result[['conceptId', 'selected_rules', 'errors', 'FSN', "PT_EN"]]
         .groupby("conceptId")
         .aggregate(
             fsn=pd.NamedAgg(column="FSN", aggfunc="first"),

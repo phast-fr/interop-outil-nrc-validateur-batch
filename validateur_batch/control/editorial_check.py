@@ -632,7 +632,7 @@ def _check_bs10(df: pd.DataFrame, pt: pd.Series, syn: pd.Series) -> pd.DataFrame
                 + r"(partie basse( (entière|gauche|droite))* de la jambe)|"
                 + r"(jambe( (entière|gauche|droite))*, du genou à la cheville)",
                 case=False,
-            )
+            ) # noqa
         )
     ].index
 

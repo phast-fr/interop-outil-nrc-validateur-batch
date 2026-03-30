@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import logging 
 
 import argparse
 import os
@@ -7,10 +8,13 @@ import pandas as pd
 
 from validateur_batch import io
 from validateur_batch.object import batch, server
+from validateur_batch.object.sctrf2 import SctEd
 from validateur_batch.control import editorial_check, format_check, scope_check
 from validateur_batch.phast import utils
 from validateur_batch.scope import Scope
 from validateur_batch.stats import print_stats
+
+logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     cli = argparse.ArgumentParser()
@@ -33,8 +37,10 @@ if __name__ == "__main__":
                      help="Login pour accéder au FTS")
     cli.add_argument("--pwd", type=str,
                      help="Mot de passe pour accéder au FTS")
+    cli.add_argument("--international", type=str,
+                     help="Chemin vers les rf2 de l'édition internationale")
     cli.add_argument("--cache", type=str,
-                     help="Fichier de cache pour les données récupérées du FTS (si vide, le FTS est uilisé pour chaque requête)")
+                     help="Chemin vers répertoire de cache", default="./cache")
     cli.add_argument("--versioning", action="store_true",
                      help="Activer la gestion des versions SNOMED CT sur le FTS")
     cli.add_argument("--scope", type=str,
@@ -45,8 +51,16 @@ if __name__ == "__main__":
 
     args = cli.parse_args()
 
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+
+
     # Initialisation de la classe de gestion du FTS
-    fts = server.Server(args.endpoint, args.login, args.pwd, versioning=args.versioning, cache_file=args.cache)
+    international = SctEd(args.international, args.cache) if args.international else None
+    fts = server.Server(args.endpoint, args.login, args.pwd, versioning=args.versioning, international=international)
 
     # Construction du périmètre d'analyse
     if args.scope is not None:
@@ -91,10 +105,11 @@ if __name__ == "__main__":
 
     # Ajouter les FSN de l'édition INT à la preview
     fsn = preview.loc[:, ["conceptId"]].drop_duplicates("conceptId", ignore_index=True)
-    fsn.loc[:, "FSN"] = [fts.get_fsn(sctid) for sctid in fsn.loc[:, "conceptId"]]
+    fsn.loc[:, "FSN"] = pd.Series([fts.get_fsn(sctid) for sctid in fsn.loc[:, "conceptId"]], dtype=object)
+    fsn.loc[:, "PT_EN"] = pd.Series([fts.get_pten(sctid) for sctid in fsn.loc[:, "conceptId"]], dtype=object)
     preview = pd.merge(preview, fsn, how="left", on="conceptId")
     preview["FSN_no_sem"] = preview["FSN"].str.replace(r'[\(\[].*[\)\]]$', "", regex=True)
-    preview = preview[["id", "active", "source", "_type_", "conceptId", "FSN", "FSN_no_sem", "term",
+    preview = preview[["id", "active", "source", "_type_", "conceptId", "FSN", "FSN_no_sem", "PT_EN", "term",
                        "caseSignificanceId", "acceptabilityId"]]
 
     # Vérification du respect des règles éditoriales

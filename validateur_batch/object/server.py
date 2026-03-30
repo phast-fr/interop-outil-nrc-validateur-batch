@@ -2,13 +2,8 @@ import jsonpath
 import requests
 from typing import Dict, List
 import pandas as pd
+from validateur_batch.object.sctrf2 import SctEd
 
-INACTIVE_STATUS = 0
-ACTIVE_STATUS = 1
-NOT_FOUND_STATUS = None
-
-from typing import Dict, List
-import pandas as pd
 
 INACTIVE_STATUS = 0
 ACTIVE_STATUS = 1
@@ -26,7 +21,7 @@ class Server:
         login: str = None,
         password: str = None,
         versioning: bool = True,
-        cache_file: str = None,
+        international: SctEd = None
     ):
         """
         Args:
@@ -36,13 +31,8 @@ class Server:
         self.endpoint = endpoint
         self.login = login
         self.password = password
-
+        self.international = international
         self.session = requests.Session()
-
-        if cache_file is not None:
-            self.cache = pd.read_csv(cache_file, dtype=str)
-        else:
-            self.cache = None
 
         if versioning:
             self.ecl_base_url = f"{endpoint}/ValueSet/$expand?url=http://snomed.info/sct/900000000000207008?fhir_vs=ecl/"  # noqa
@@ -153,9 +143,11 @@ class Server:
                 - 0 : inactif
                 - None : concept non trouvé
         """
-        if self.cache is not None:
-            if sctid in self.cache["conceptId"].values:
+        if self.international:
+            if self.international.is_active(sctid):
                 return ACTIVE_STATUS
+            else:
+                return INACTIVE_STATUS
 
         json = self.lookup(sctid)
         if self._sctid_is_inactive(json):
@@ -172,10 +164,8 @@ class Server:
         returns:
             FSN du concept
         """
-        if self.cache is not None:
-            fsn = self.cache.loc[self.cache["conceptId"] == sctid, "fsn/term"]
-            if not fsn.empty:
-                return fsn.iloc[0]
+        if self.international:
+            return self.international.get_fsn(sctid)
 
         json = self.lookup(sctid)
         p = list(
@@ -188,6 +178,20 @@ class Server:
         return next(
             filter(lambda x: x["name"] == "value", p.resolve_parent(json)[0])
         )["valueString"]  # noqa
+    
+    def get_pten(self, sctid: str) -> str:
+        """Donne le PTEN du concept `sctid`
+
+        args:
+            sctid: SCTID du concept
+
+        returns:
+            PTEN du concept
+        """
+        if self.international:
+            return self.international.get_pten(sctid)
+        else:
+            return ""
 
     def _sctid_is_inactive(self, json: Dict) -> bool:
         """Vérifie si le concept est inactif
@@ -208,24 +212,3 @@ class Server:
         )["valueBoolean"]
 
         return is_inactive
-    
-    def get_status(self, sctid: str) -> int | None:
-        """Donne le statut du concept `sctid`
-        args:
-            sctid: SCTID du concept
-        returns:
-            Statut du concept `sctid` :
-                - 1 : actif
-                - 0 : inactif
-                - None : concept non trouvé
-        """
-        if self.cache is not None:
-            if sctid in self.cache["conceptId"].values:
-                return ACTIVE_STATUS
-            
-        json = self.lookup(sctid)
-        
-        if self._sctid_is_inactive(json):
-            return INACTIVE_STATUS
-        else:
-            return ACTIVE_STATUS
