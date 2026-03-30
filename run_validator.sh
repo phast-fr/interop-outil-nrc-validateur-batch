@@ -104,7 +104,7 @@ uv run \
     --ina "`find "${TRANSFORMATION_DIR}" -iname 'Descriptions_Inactivations*'`" \
     --login "pierre-olivier.gregoire@phast.fr" \
     --pwd "Pierre-Olivier123*" \
-    --cache "${CACHE_PATH}" \
+    --international data/SnomedCT_InternationalRF2_PRODUCTION_20260301T120000Z \
     --scope "scope.json"
 cp output/* "${VALIDATION_DIR}/"
 printf "Résultats du validateur copiés dans : ${VALIDATION_DIR}\n"
