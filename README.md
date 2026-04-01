@@ -6,6 +6,8 @@ Ce projet a pour objectif de valider le format d'un ensemble de fichiers détail
 ## Prérequis
 - Accès à un serveur FHIR contenant l'édition internationale (version du projet)
 - Accès au dernier RF2 de l'édition nationale (dernière version publiée)
+- Recommandé : accès au dernier RF2 de l'édition internationale
+- Recommandé : fichier de définition du périmètre de travail
 
 ## Installation du projet
 ```shell
@@ -25,13 +27,48 @@ Le projet nécessite plusieurs données en entrée :
 - [**OBLIGATOIRE**] Snapshot de la dernière release de l'édition française
 - [**OBLIGATOIRE**] Date de publication de la dernière release de l'édition française
 - [**OBLIGATOIRE**] Dossier de sauvegarde du fichier de résultats
-- [*OPTIONNEL*] Chemin du fichier des concepts sans modification
-- [*OPTIONNEL*] Chemin du fichier des descriptions à ajouter
-- [*OPTIONNEL*] Chemin du fichier des métadonnées de descriptions à modifier
-- [*OPTIONNEL*] Chemin du fichier des descriptions à remplacer par une nouvelle traduction
-- [*OPTIONNEL*] Chemin du fichier des descriptions à inactiver
+- [*OPTIONNEL*] `--val` : Chemin du fichier des concepts sans modification
+- [*OPTIONNEL*] `--add` : Chemin du fichier des descriptions à ajouter
+- [*OPTIONNEL*] `--chg` : Chemin du fichier des métadonnées de descriptions à modifier
+- [*OPTIONNEL*] `--rep` : Chemin du fichier des descriptions à remplacer par une nouvelle traduction
+- [*OPTIONNEL*] `--ina` : Chemin du fichier des descriptions à inactiver
+- [*OPTIONNEL*] `--login` : Login pour accéder au FTS
+- [*OPTIONNEL*] `--pwd` : Mot de passe pour accéder au FTS
+- [*OPTIONNEL*] `--international` : Chemin vers les RF2 de l'édition internationale (alternative à la récupération via le FTS)
+- [*OPTIONNEL*] `--cache` : Chemin vers le répertoire de cache (défaut : `./cache`)
+- [*OPTIONNEL*] `--scope` : Chemin vers le fichier JSON définissant le périmètre d'analyse
+
 ```shell
-./validateur_batch/main.py "endpoint_FTS" "chemin_vers_release_fr/Snapshot/" "YYYYMMDD" "dossier_sauvegarde" --val "chemin_fichier_concept_sans_modification" --add "chemin_fichier_descriptions_à_ajouter" --chg "chemin_fichier_metadonnees_à_modifier" --rep "chemin_fichier_descriptions_à_remplacer" --ina "chemin_fichier_descriptions_à_inactiver"
+./validateur_batch/main.py "endpoint_FTS" "chemin_vers_release_fr/Snapshot/" "YYYYMMDD" "dossier_sauvegarde" --val "chemin_fichier_concept_sans_modification" --add "chemin_fichier_descriptions_à_ajouter" --chg "chemin_fichier_metadonnees_à_modifier" --rep "chemin_fichier_descriptions_à_remplacer" --ina "chemin_fichier_descriptions_à_inactiver" --login "login" --pwd "mot_de_passe" --international "chemin_vers_rf2_international" --cache "chemin_vers_cache" --scope "scope.json"
+```
+
+## Fichiers RF2
+- Téléchargement de la dernière version de l'édition française SNOMED CT : https://smt.esante.gouv.fr/terminologie-snomed-ct-fr/
+- Téléchargement de la dernière version de l'édition internationale SNOMED CT : https://smt.esante.gouv.fr/terminologie-snomed-ct/
+
+Attention pour le moment l'outil attend :
+* le chemin vers le sous-répertoire "Snapshot" pour l'édition nationale française (deuxième paramètre positionnel)
+* le chemin vers le répertoire racine de l'édition internationale, contenant le fichier `release_package_information.json` (paramètre --international)
+
+## Cache
+Le chargement des fichiers RF2 de l'édition internationale est long. Lors de la première exécution, les données utiles sont stockées dans des
+fichiers parquet dans le répertoire de cache (par défaut `./cache`). À l'exécution suivante, ces fichiers sont chargés, évitant la lecture des fichiers RF2.
+
+## Fichier de scope
+Le fichier de scope permet de définir le périmètre d'analyse, c'est-à-dire les concepts SNOMED CT sur lesquels les vérifications seront effectuées. Sans ce fichier, le périmètre est déduit des concepts présents dans les fichiers CSV de transformation.
+
+Le fichier est au format JSON et contient un tableau de sections. Chaque section est un objet avec deux attributs :
+
+- `name` : nom de la section (utilisé dans les rapports de résultats)
+- `ecl` : expression ECL définissant les concepts de la section (évaluée via le FTS)
+
+```json
+[
+  {
+    "name": "Structure corporelle",
+    "ecl": "<< 123037004 |Body structure (body structure)|"
+  }
+]
 ```
 
 ## Fichiers d'entrée valides
@@ -102,7 +139,7 @@ Les tableaux ci-dessous indiquent les [règles éditoriales de l'édition franç
 | se1                  |            ❌            |
 | se2                  |            ❌            |
 | se3                  |            ❌            |
-| se4                  |            ❌            |
+| se4                  |            ✅            |
 | se5                  |            ❌            |
 | se6                  |            ❌            |
 | se7                  |            ❌            |
@@ -131,7 +168,7 @@ Les tableaux ci-dessous indiquent les [règles éditoriales de l'édition franç
 | -------------------- | :---------------------: |
 | or2                  |            ❌            |
 | or3                  |            ❌            |
-| or4                  |            ❌            |
+| or4                  |            ✅            |
 | or5                  |            ❌            |
 | or6                  |            ❌            |
 
@@ -191,7 +228,7 @@ Les tableaux ci-dessous indiquent les [règles éditoriales de l'édition franç
 | -------------------- | :---------------------: |
 | pa2                  |            ❌            |
 | pa3                  |            ✅            |
-| pa3.1                |            ❌            |
+| pa3.1                |            ✅            |
 | pa4                  |            ✅            |
 | pa5                  |            ❌            |
 | pa6                  |            ✅            |
@@ -281,7 +318,7 @@ Les tableaux ci-dessous indiquent les [règles éditoriales de l'édition franç
 | -------------------- | :---------------------: |
 | bs2                  |            ✅            |
 | bs3                  |            ✅            |
-| bs4                  |            ❌            |
+| bs4                  |            ✅            |
 | bs5                  |            ✅            |
 | bs6                  |            ✅            |
 | bs7                  |            ✅            |
