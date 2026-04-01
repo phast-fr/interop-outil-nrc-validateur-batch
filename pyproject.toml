@@ -11,12 +11,10 @@ dependencies = [
     "openpyxl>=3.1.5",
     "pandas",
     "pyarrow>=23.0.1",
-    "pytest",
     "python-jsonpath",
     "regex>=2026.2.28",
     "requests",
     "responses",
-    "setuptools",
 ]
 
 [project.scripts]
@@ -35,6 +33,7 @@ include-package-data = false
 
 [dependency-groups]
 dev = [
+    "pytest>=9.0.2",
     "ruff>=0.15.0",
 ]
 
