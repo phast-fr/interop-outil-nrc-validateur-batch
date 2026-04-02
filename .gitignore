@@ -6,6 +6,7 @@ __pycache__
 ar4.xlsx
 pattern.txt
 scope.json
+run_validator.sh
 data/
 output/
 # Byte-compiled / optimized / DLL files
