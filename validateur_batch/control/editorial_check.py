@@ -7,67 +7,6 @@ import pandas as pd
 from validateur_batch.object import server
 
 
-def _check_case_significance(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Identifie les descriptions dont la casse du terme ne correspond pas à leur caseSignificanceId.
-    args:
-        df: DataFrame à valider
-    returns:
-        DataFrame du fichier avec une colonne identifiant les
-        descriptions dont la casse du terme ne correspond pas à leur caseSignificanceId.
-    """
-    # Si tous les caractères du terme sont en minuscules, case significance devrait être "ci"
-    mask_ci = (
-        df.loc[:, "term"].str.islower() &
-        (df.loc[:, "caseSignificanceId"] != "ci")
-    )
-
-    if mask_ci.any():
-        df["case-ci"] = "0"
-        df.loc[mask_ci, "case-ci"] = "1"
-
-    mask_CS = (
-        df.loc[:, "term"].str[0].str.isupper() &
-        (df.loc[:, "caseSignificanceId"] != "CS")
-    )
-
-    if mask_CS.any():
-        df["case-CS"] = "0"
-        df.loc[mask_CS, "case-CS"] = "1"
-
-    mask_cI = (
-        ~df.loc[:, "term"].str[0].str.isupper() &
-        ~df.loc[:, "term"].str.islower() & 
-        (df.loc[:, "caseSignificanceId"] != "cI")
-    )
-
-    if mask_cI.any():
-        df["case-cI"] = "0"
-        df.loc[mask_cI, "case-cI"] = "1"
-
-    return df
-
-# def _get_correct_case(cs: pd.DataFrame) -> pd.DataFrame:
-#     """Corrige les descriptions labelisées 'CS' en 'cI'
-
-#     args:
-#         cs: Descriptions labelisées comme 'CS'`
-
-#     returns:
-#         DataFrame avec les identifiants de descriptions comme index et
-#         la correction de casse comme valeur
-#     """
-#     # Récupérer toutes les descriptions dont le premier mot contient une majuscule
-#     # et qui sont labelisées 'CS'
-#     cs = cs.loc[~cs.loc[:, "term"].str.islower()]
-#     upper = cs.loc[[any(w.isupper() for w in word)
-#                     for word in cs.loc[:, "term"].apply(lambda x: x.split()[0])]]
-#     incorrect_case = cs.iloc[~cs.index.isin(upper.index)]
-
-#     return pd.DataFrame(data={"caseSignificanceId": ["cI"] * len(incorrect_case)},
-#                         index=incorrect_case.index)
-
-
 #####################
 # Règles génériques #
 #####################
@@ -390,6 +329,14 @@ def _check_bs3(df: pd.DataFrame, bs: pd.Series, pt: pd.Series, syn: pd.Series) -
     return df
 
 def _remove_accents(s):
+    """Supprime les diacritiques d'une chaîne de caractères.
+
+    args:
+        s: Chaîne à traiter
+
+    returns:
+        Chaîne sans diacritiques, ou chaîne vide si `s` n'est pas une str.
+    """
     if not isinstance(s, str):
         return ""
     return ''.join(

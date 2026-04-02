@@ -1,7 +1,6 @@
 import jsonpath
 import requests
 from typing import Dict, List
-import pandas as pd
 from validateur_batch.object.sctrf2 import SctEd
 
 
@@ -193,22 +192,3 @@ class Server:
         else:
             return ""
 
-    def _sctid_is_inactive(self, json: Dict) -> bool:
-        """Vérifie si le concept est inactif
-        args:
-            json: Résultat de l'opération lookup
-        returns:
-            True si le concept est inactif, False sinon
-        """
-        p = list(
-            jsonpath.query(
-                "$.parameter[?@name == 'property'].part[?@valueCode == 'inactive']",
-                json,
-            ).pointers()  # noqa
-        )[0]
-
-        is_inactive = next(
-            filter(lambda x: x["name"] == "value", p.resolve_parent(json)[0])
-        )["valueBoolean"]
-
-        return is_inactive

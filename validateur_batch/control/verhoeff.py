@@ -5,6 +5,14 @@ perm = [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [1, 5, 7, 6, 2, 8, 3, 0, 9, 4], [5, 8, 0
 inv  = [0, 4, 3, 2, 1, 5, 6, 7, 8, 9]
 
 def digit(msg : str) -> int | None:
+  """Calcule le chiffre de contrôle Verhoeff pour la chaîne `msg`.
+
+  args:
+      msg: Chaîne de chiffres
+
+  returns:
+      Chiffre de contrôle, ou None si `msg` contient des caractères invalides.
+  """
   try:
     i = len(msg)
     j = 0
@@ -20,6 +28,14 @@ def digit(msg : str) -> int | None:
     return None
   
 def validate(msg : str) -> bool:
+  """Vérifie qu'une chaîne de chiffres est valide selon l'algorithme de Verhoeff.
+
+  args:
+      msg: Chaîne de chiffres incluant le chiffre de contrôle
+
+  returns:
+      True si la chaîne est valide, False sinon.
+  """
   try:
     i = len(msg)
     j = 0
@@ -35,6 +51,14 @@ def validate(msg : str) -> bool:
     return False
   
 def generate(msg : str) -> str | None:
+  """Génère une chaîne valide selon l'algorithme de Verhoeff en ajoutant le chiffre de contrôle.
+
+  args:
+      msg: Chaîne de chiffres sans chiffre de contrôle
+
+  returns:
+      Chaîne avec le chiffre de contrôle ajouté, ou None si `msg` est invalide.
+  """
   d = digit(msg)
   if d:
     return msg + str(d)

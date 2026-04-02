@@ -33,6 +33,11 @@ class Batch:
     """Représente un batch de descriptions à ajouter, modifier, inactiver ou remplacer
     dans l'Authoring Platform ainsi que les résultats des contrôles associés"""
     def __init__(self, file: str, type: BATCH_TYPE):
+        """
+        args:
+            file: Chemin vers le fichier CSV du batch
+            type: Type du batch (VAL, ADD, CHG, REP, INA)
+        """
         # Métadonnées du batch
         self.file = file
         self.type = type

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from validateur_batch.object.server import INACTIVE_STATUS 
-from typing import Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING
 import validateur_batch.control.verhoeff as verhoeff
 
 if TYPE_CHECKING:

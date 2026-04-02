@@ -104,6 +104,7 @@ def compute_diff(
 
 
 def main():
+    """Point d'entrée CLI : compare deux CSV de résultats et génère un Excel des différences."""
     parser = argparse.ArgumentParser(
         description="Comparer deux CSV (séparateur ;) et sortir un Excel contenant uniquement les différences."
     )

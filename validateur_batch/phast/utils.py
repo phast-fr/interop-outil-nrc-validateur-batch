@@ -8,6 +8,14 @@ MAIN_COLUMNS = ['id', 'active', '_type_', 'conceptId', 'FSN', 'FSN_no_sem', 'ter
 
 
 def combine_rule_selections (row:dict) -> str:
+    """Construit une chaîne résumant les règles sélectionnées pour une description.
+
+    args:
+        row: Ligne du DataFrame (dict) représentant une description
+
+    returns:
+        Chaîne de la forme "terme (PT|SA): règle1 règle2 ...", ou pd.NA si aucune règle sélectionnée.
+    """
     selected_keys = [key for key in row.keys() if key.startswith("S_") and row[key]=="1"]
     if len(selected_keys) > 0:
         selection = row["term"] + f" ({SHORT_ACCEPTABILITY[row['acceptabilityId']]})" + ": " + " ".join([key[2:] for key in selected_keys])
@@ -16,6 +24,14 @@ def combine_rule_selections (row:dict) -> str:
     return selection
 
 def combine_rule_errors (row:dict) -> str:
+    """Construit une chaîne résumant les erreurs détectées pour une description.
+
+    args:
+        row: Ligne du DataFrame (dict) représentant une description
+
+    returns:
+        Chaîne de la forme "terme (PT|SA): erreur1 erreur2 ...", ou pd.NA si aucune erreur.
+    """
     error_keys = [key for key in row.keys() if (key not in MAIN_COLUMNS) and (not key.startswith("S_")) and (not key.startswith("E_") and row[key]=="1")]
     if len(error_keys) > 0:
         errors = row["term"] + f" ({SHORT_ACCEPTABILITY[row['acceptabilityId']]})" + ": " + " ".join(error_keys)
@@ -24,16 +40,25 @@ def combine_rule_errors (row:dict) -> str:
     return errors
 
 def aggregate_combined(values):
-    return ' | '.join([v for v in values if pd.notna(v)])
+    """Concatène des valeurs non-nulles avec le séparateur ' | '.
 
-def pt_fr(group):
-    if (group is not None) and pd.notna(group):
-        return f"{len(group) =}, {group.shape() =}"
-    return pd.NA
+    args:
+        values: Itérable de valeurs (str ou pd.NA)
+
+    returns:
+        Chaîne des valeurs non-nulles jointes par ' | '.
+    """
+    return ' | '.join([v for v in values if pd.notna(v)])
 
 
 def combine_results(check_result: pd.DataFrame) -> pd.DataFrame:
-    """
+    """Agrège les résultats de contrôle par concept.
+
+    args:
+        check_result: DataFrame des résultats de contrôle au niveau description
+
+    returns:
+        DataFrame agrégé par conceptId avec colonnes FSN, PT FR, SAs, règles sélectionnées et erreurs.
     """
     check_result = check_result.loc[check_result["active"]=="1"]
     check_result["selected_rules"] = check_result.apply(combine_rule_selections, axis="columns")
