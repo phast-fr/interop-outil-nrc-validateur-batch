@@ -129,7 +129,7 @@ Les tableaux ci-dessous indiquent les [règles éditoriales de l'édition franç
 | ar1                  |            ❌            |
 | ar2                  |            ✅            |
 | ar3                  |            ❌            |
-| ar4-FR               |            ❌            |
+| ar4-FR               |            ✅            |
 | ar6                  |            ✅            |
 | ar7                  |            ❌            |
 
@@ -137,31 +137,31 @@ Les tableaux ci-dessous indiquent les [règles éditoriales de l'édition franç
 | Identifiant de règle | Statut d'implémentation |
 | -------------------- | :---------------------: |
 | se1                  |            ❌            |
-| se2                  |            ❌            |
-| se3                  |            ❌            |
+| se2                  |            ✅            |
+| se3                  |            ✅            |
 | se4                  |            ✅            |
 | se5                  |            ❌            |
 | se6                  |            ❌            |
 | se7                  |            ❌            |
 | se8                  |            ❌            |
 | se9                  |            ❌            |
-| se10                 |            ❌            |
+| se10                 |            ✅            |
 | se11                 |            ❌            |
 
 #### Lettres grecques (gr)
 | Identifiant de règle | Statut d'implémentation |
 | -------------------- | :---------------------: |
-| gr1                  |            ❌            |
+| gr1                  |            🟡           |
 
 #### Lettres ligaturées (ll)
 | Identifiant de règle | Statut d'implémentation |
 | -------------------- | :---------------------: |
-| ll1                  |            ❌            |
+| ll1                  |            ❌           |
 
 #### Noms propres (np)
 | Identifiant de règle | Statut d'implémentation |
 | -------------------- | :---------------------: |
-| np1                  |            ❌            |
+| np1                  |            ❌           |
 
 #### Rectification orthographiques de 1990 (or)
 | Identifiant de règle | Statut d'implémentation |
@@ -175,7 +175,7 @@ Les tableaux ci-dessous indiquent les [règles éditoriales de l'édition franç
 #### Style général et syntaxe (ss)
 | Identifiant de règle | Statut d'implémentation |
 | -------------------- | :---------------------: |
-| ss1                  |            ❌            |
+| ss1                  |            🟡            |
 | ss2                  |            ❌            |
 | ss3                  |            ❌            |
 | ss4                  |            ❌            |
