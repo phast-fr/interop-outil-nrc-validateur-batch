@@ -1,5 +1,8 @@
+import hashlib
+import json
 import jsonpath
 import requests
+from pathlib import Path
 from typing import Dict, List
 from validateur_batch.object.sctrf2 import SctEd
 
@@ -20,7 +23,8 @@ class Server:
         login: str = None,
         password: str = None,
         versioning: bool = True,
-        international: SctEd = None
+        international: SctEd = None,
+        cache_dir: str = "cache",
     ):
         """
         Args:
@@ -32,15 +36,50 @@ class Server:
         self.password = password
         self.international = international
         self.session = requests.Session()
+        self._available_versions: List[str] | None = None
+        self._cache_dir = Path(cache_dir)
+        self._cache_dir.mkdir(parents=True, exist_ok=True)
 
         if versioning:
             self.ecl_base_url = f"{endpoint}/ValueSet/$expand?url=http://snomed.info/sct/900000000000207008?fhir_vs=ecl/"  # noqa
             self.lookup_base_url = f"{endpoint}/CodeSystem/$lookup?system=http://snomed.info/sct&version=http://snomed.info/sct/900000000000207008"  # noqa
+
         else:
             self.ecl_base_url = f"{endpoint}/ValueSet/$expand?url=http://snomed.info/sct?fhir_vs=ecl/"  # noqa
             self.lookup_base_url = (
                 f"{endpoint}/CodeSystem/$lookup?system=http://snomed.info/sct"  # noqa
             )
+
+        print(f"Versions disponibles : {self.available_versions()}")
+        print(f"Version utilisée : {self.last_available_version()}")
+
+    def available_versions(self) -> List[str]:
+        """Renvoie la liste des versions disponibles sur le serveur FTS
+
+        Returns:
+            Liste des versions disponibles
+        """
+        if self._available_versions is not None:
+            return self._available_versions
+
+        url = f"{self.endpoint}/metadata?mode=terminology"
+        response = self.session.request("GET", url, auth=(self.login, self.password) if self.login and self.password else None)
+        response.raise_for_status()
+
+        self._available_versions = list(jsonpath.findall('$codeSystem[?(@.uri=="http://snomed.info/sct")].version[*].code', response.json())) # noqa
+
+        return self._available_versions
+
+    def last_available_version(self) -> str:
+        """Renvoie la dernière version disponible sur le serveur FTS
+
+        Returns:
+            Dernière version disponible
+        """
+        versions = self.available_versions()
+        if len(versions) == 0:
+            raise ValueError("Aucune version de SNOMED CT trouvée sur le serveur FTS.")
+        return versions[-1]
 
     def ecl(self, ecl: str) -> List[str]:
         """Envoie une requête ECL au FTS
@@ -51,12 +90,25 @@ class Server:
         Returns:
             Liste des SCTID correspondant à la requête ECL
         """
+        cache_key = hashlib.sha256(ecl.encode()).hexdigest()
+        cache_file = self._cache_dir / f"{cache_key}.json"
+        current_version = self.last_available_version()
+
+        if cache_file.exists():
+            cached = json.loads(cache_file.read_text())
+            if cached.get("version_uri") == current_version:
+                print(f"Utilisation du cache pour la requête ECL: {ecl}")
+                return cached["codes"]
+            else:
+                print(f"Version du cache ({cached.get('version_uri')}) différente de la version actuelle du serveur FTS ({current_version}). Requête ECL envoyée au serveur.")
+
         url = f"{self.endpoint}/ValueSet/$expand"
         params = {
             "offset": 0,
             "url": f"http://snomed.info/sct/900000000000207008?fhir_vs=ecl/{ecl}",  # noqa
         }
         codes = []
+        version_uri = None
         while True:
             response = self.session.request(
                 "GET",
@@ -77,20 +129,28 @@ class Server:
                 "$.expansion.contains[*].code",
                 response.text,
             )
+            raw_version_uri = jsonpath.match(
+                "$.expansion.parameter[?@name == 'version'].valueString",
+                response.text,
+            ).obj
+            version_uri = raw_version_uri.split("|")[-1] if raw_version_uri else None
             codes.extend(page_codes)
             if len(codes) < total:
                 params["offset"] = len(codes)
             else:
                 break
 
+        cache_file.write_text(
+            json.dumps({"version_uri": version_uri, "codes": codes})
+        )
         return codes
 
 
-    def _sctid_is_inactive(self, json: Dict) -> bool:
+    def _sctid_is_inactive(self, data: Dict) -> bool:
         """Vérifie si le concept est inactif
 
         args:
-            json: Résultat de l'opération lookup
+            data: Résultat de l'opération lookup
 
         returns:
             True si le concept est inactif, False sinon
@@ -98,12 +158,12 @@ class Server:
         p = list(
             jsonpath.query(
                 "$.parameter[?@name == 'property'].part[?@valueCode == 'inactive']",
-                json,
+                data,
             ).pointers()  # noqa
         )[0]
 
         is_inactive = next(
-            filter(lambda x: x["name"] == "value", p.resolve_parent(json)[0])
+            filter(lambda x: x["name"] == "value", p.resolve_parent(data)[0])
         )["valueBoolean"]
 
         return is_inactive
@@ -148,8 +208,8 @@ class Server:
             else:
                 return INACTIVE_STATUS
 
-        json = self.lookup(sctid)
-        if self._sctid_is_inactive(json):
+        data = self.lookup(sctid)
+        if self._sctid_is_inactive(data):
             return INACTIVE_STATUS
         else:
             return ACTIVE_STATUS
@@ -166,16 +226,16 @@ class Server:
         if self.international:
             return self.international.get_fsn(sctid)
 
-        json = self.lookup(sctid)
+        data = self.lookup(sctid)
         p = list(
             jsonpath.query(
                 "$.parameter[?@name == 'designation'].part[?@valueCoding.code == '900000000000003001']",
-                json,
+                data,
             ).pointers()  # noqa
         )[0]
 
         return next(
-            filter(lambda x: x["name"] == "value", p.resolve_parent(json)[0])
+            filter(lambda x: x["name"] == "value", p.resolve_parent(data)[0])
         )["valueString"]  # noqa
     
     def get_pten(self, sctid: str) -> str:
