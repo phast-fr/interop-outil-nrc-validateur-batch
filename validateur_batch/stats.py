@@ -15,6 +15,8 @@ def print_stats(scope: Scope, preview: pd.DataFrame, batches: list):
         return
     
     print(f"Nombre de concepts dans le périmètre commandé : {len(scope.full_scope_df)}")
+    for section in scope.sections:
+        print(f"Nombre de concepts dans la section '{section}' : {len(scope.get_section_df(section))}")
     print(f"Nombre de concepts dans les fichiers livrés : {preview['conceptId'].nunique()}")
 
     b_val = next((b for b in batches if b.type == "VAL"), None)

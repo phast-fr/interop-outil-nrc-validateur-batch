@@ -65,7 +65,7 @@ class Scope:
         Returns:
             list: Liste des noms de sections définies dans le périmètre d'analyse.
         """
-        return [section["name"] for section in self.definitions["sections"]]
+        return [section["name"] for section in self.definitions]
 
     @property
     def full_scope_df(self) -> pd.DataFrame:
