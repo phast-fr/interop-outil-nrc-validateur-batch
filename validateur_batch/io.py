@@ -160,7 +160,8 @@ def select_desc(
 
     returns:
         DataFrame représentant les concepts de l'édition FR inclus dans le périmètre
-        des batchs
+        des batchs ou de la commande, avec les colonnes "id", "conceptId", "term", "caseSignificanceId",
+        "acceptabilityId" et "source" (indiquant si la description est dans le périmètre de la commande, de la livraison ou les deux)
     """
 
     scope_delivery = concepts_in_delivery(list_batch, desc_act_fr)

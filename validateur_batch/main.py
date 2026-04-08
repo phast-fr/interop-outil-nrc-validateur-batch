@@ -98,10 +98,9 @@ if __name__ == "__main__":
             index=False
         )
         # Appliquer les changements des batchs sur `data`
-        if b.type != "VAL":
-            preview.set_index("id", inplace=True)
-            preview = b.apply_modif(preview)
-            preview.reset_index(inplace=True)
+        preview.set_index("id", inplace=True)
+        preview = b.apply_modif(preview)
+        preview.reset_index(inplace=True)
 
     # Ajouter les FSN de l'édition INT à la preview
     fsn = preview.loc[:, ["conceptId"]].drop_duplicates("conceptId", ignore_index=True)

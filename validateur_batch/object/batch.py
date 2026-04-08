@@ -72,6 +72,7 @@ class Batch:
                        "acceptabilityId"]
         add.loc[:, "_type_"] = ["ADD"] * len(add)
         add.loc[:, "active"] = ["1"] * len(add)
+        add["source"] = "delivery"
 
         # Ajout des descriptions du batch
         preview.reset_index(inplace=True)
@@ -95,6 +96,7 @@ class Batch:
         chg.set_index("Description ID", inplace=True)
         chg.columns = ["caseSignificanceId", "acceptabilityId"]
         chg.loc[:, "_type_"] = ["CHG"] * len(chg)
+        chg["source"] = "delivery"
 
         # Changement des descriptions du batch
         preview.update(chg)
@@ -127,6 +129,7 @@ class Batch:
         ina = rep[["Description ID"]].rename(columns={"Description ID": "id"})
         ina["active"] = "0"
         ina["_type_"] = "INAREP"
+        ina["source"] = "delivery"
         ina.set_index("id", inplace=True)
         preview.update(ina)
 
@@ -146,6 +149,7 @@ class Batch:
         )
         add["active"] = "1"
         add["_type_"] = "REPNEW"
+        add["source"] = "delivery"
         preview.update(add)
 
         # Promotion des descriptions de remplacement existantes
@@ -156,6 +160,7 @@ class Batch:
         )
         promote["_type_"] = "REPEXIST"
         promote["acceptabilityId"] = "PREFERRED"
+        promote["source"] = "delivery"
         preview.update(promote)
 
         return preview
@@ -174,6 +179,7 @@ class Batch:
         ina = self.df.loc[:, ["Description ID Or Term"]]
         ina.loc[:, "active"] = ["0"] * len(ina)
         ina.loc[:, "_type_"] = ["INA"] * len(ina)
+        ina["source"] = "delivery"
         ina.set_index("Description ID Or Term", inplace=True)
 
         # Inactivation des descriptions du batch
@@ -193,6 +199,7 @@ class Batch:
         """
         # Marquage des descriptions du batch
         preview.loc[preview["conceptId"].isin(self.df["Concept ID"]), "_type_"] = "VAL"
+        preview.loc[preview["conceptId"].isin(self.df["Concept ID"]), "source"] = "delivery"
 
         return preview
 

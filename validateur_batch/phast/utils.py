@@ -74,7 +74,6 @@ def combine_results(check_result: pd.DataFrame) -> pd.DataFrame:
         )
     )
 
-    check_result_agg_sctid
     check_result_agg_sctid["pt_fr"] = (
         check_result
         .loc[check_result["acceptabilityId"]=="PREFERRED"]
