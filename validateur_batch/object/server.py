@@ -119,8 +119,6 @@ class Server:
                 else None,
             )
             response.raise_for_status()
-            with open(f"output/reponse_ecl_{params["offset"]}.json", "w") as file:
-                file.write(response.text)
             total = jsonpath.match(
                 "$.expansion.total",
                 response.text,
