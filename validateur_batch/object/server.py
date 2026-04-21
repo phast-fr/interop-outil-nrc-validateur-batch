@@ -50,8 +50,8 @@ class Server:
                 f"{endpoint}/CodeSystem/$lookup?system=http://snomed.info/sct"  # noqa
             )
 
-        print(f"Versions disponibles : {self.available_versions()}")
-        print(f"Version utilisée : {self.last_available_version()}")
+        #print(f"Versions disponibles : {self.available_versions()}")
+        #print(f"Version utilisée : {self.last_available_version()}")
 
     def available_versions(self) -> List[str]:
         """Renvoie la liste des versions disponibles sur le serveur FTS
@@ -92,7 +92,7 @@ class Server:
         """
         cache_key = hashlib.sha256(ecl.encode()).hexdigest()
         cache_file = self._cache_dir / f"{cache_key}.json"
-        current_version = self.last_available_version()
+        current_version = "http://snomed.info/sct/900000000000207008/version/20260201" # self.last_available_version()
 
         if cache_file.exists():
             cached = json.loads(cache_file.read_text())
@@ -141,7 +141,7 @@ class Server:
                 break
 
         cache_file.write_text(
-            json.dumps({"version_uri": version_uri, "codes": codes})
+            json.dumps({"ecl": ecl, "version_uri": version_uri, "codes": codes})
         )
         return codes
 
