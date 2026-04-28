@@ -1524,7 +1524,11 @@ def run_editorial_check(
     rules: pd.DataFrame,
     terminology_anatomica: pd.DataFrame,
     fts: server.Server,
-    desc_act_fr: pd.DataFrame 
+    desc_act_fr: pd.DataFrame ,
+    ecl_body_surface_region: list[str],
+    ecl_anatomical_structure: list,
+    ecl_pharmaceutical_biological_product: list,
+    ecl_physical_object: list
 ) -> pd.DataFrame:
     """Lance l'ensemble des contrôles sur le respect des règles éditoriales.
 
@@ -1551,16 +1555,20 @@ def run_editorial_check(
           | (df.loc[:, "FSN"].str.endswith(" (cell structure)"))
           | (df.loc[:, "FSN"].str.endswith(" (morphologic abnormality)")))
     # Body surface region
-    bsr = (df.loc[:, "conceptId"].isin(fts.ecl("<< 127947003")))
+    #bsr = (df.loc[:, "conceptId"].isin(fts.ecl("<< 127947003")))
+    bsr = (df.loc[:, "conceptId"].isin(ecl_body_surface_region))
     # Anatomical structure
-    anats = (df.loc[:, "conceptId"].isin(fts.ecl("<< 91723000")))
+    #anats = (df.loc[:, "conceptId"].isin(fts.ecl("<< 91723000")))
+    anats = (df.loc[:, "conceptId"].isin(ecl_anatomical_structure))
     # Clinical finding
     co = (df.loc[:, "FSN"].str.endswith(" (finding)"))
     pa = (df.loc[:, "FSN"].str.endswith(" (disorder)"))
     # Pharmaceutical / biological product
-    me = (df.loc[:, "conceptId"].isin(fts.ecl("<< 373873005")))
+    #me = (df.loc[:, "conceptId"].isin(fts.ecl("<< 373873005")))
+    me = (df.loc[:, "conceptId"].isin(ecl_pharmaceutical_biological_product))
     # Physical object
-    sb = (df.loc[:, "conceptId"].isin(fts.ecl("<< 260787004")))
+    #sb = (df.loc[:, "conceptId"].isin(fts.ecl("<< 260787004")))
+    sb = (df.loc[:, "conceptId"].isin(ecl_physical_object))
     # Procedure
     pr = ((df.loc[:, "FSN"].str.endswith(" (procedure)"))
           | (df.loc[:, "FSN"].str.endswith(" (regime/therapy)")))

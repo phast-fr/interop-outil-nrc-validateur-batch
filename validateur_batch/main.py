@@ -111,11 +111,17 @@ if __name__ == "__main__":
     preview = preview[["id", "active", "source", "_type_", "conceptId", "FSN", "FSN_no_sem", "PT_EN", "term",
                        "caseSignificanceId", "acceptabilityId"]]
 
+    # Récupération des ecl
+    ecl_body_surface_region = fts.ecl("<< 127947003")
+    ecl_anatomical_structure = fts.ecl("<< 91723000")
+    ecl_pharmaceutical_biological_product = fts.ecl("<< 373873005")
+    ecl_physical_object = fts.ecl("<< 260787004")
+
     # Vérification du respect des règles éditoriales
     print("\n## Respect des règles éditoriales ##")
     rules = pd.read_csv(os.path.join(os.path.dirname(__file__), "rules.csv"),  dtype={"en": "string", "fr": "string", "id": "string", "pt": "Int64", "syn": "Int64"}, sep=";")
     terminology_anatomica = pd.read_csv(os.path.join(os.path.dirname(__file__), "Terminologia Anatomica - ancienne VS nouvelle nomenclature - 012026.csv"), dtype=str, sep=";")
-    preview = editorial_check.run_editorial_check(preview, rules, terminology_anatomica, fts, desc_act_fr)
+    preview = editorial_check.run_editorial_check(preview, rules, terminology_anatomica, fts, desc_act_fr,  ecl_body_surface_region, ecl_anatomical_structure, ecl_pharmaceutical_biological_product, ecl_physical_object)
     
     # Vérification du respect 1 concept = 1 PT
     preview = format_check.check_pt(preview)

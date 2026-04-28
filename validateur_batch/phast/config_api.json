@@ -1,0 +1,10 @@
+{
+  "endpoint": "https://services.phast.fr/resources-server/api/FHIR",
+  "snapshot": "D:\\Data_Import\\Terminologie\\Dev\\Snomed\\ValidateurBatch\\Snapshot",
+  "rules": "C:\\Sources\\interop-outil-nrc-validateur-batch\\validateur_batch\\rules.csv",
+  "terminology_anatomica": "C:\\Sources\\interop-outil-nrc-validateur-batch\\validateur_batch\\Terminologia Anatomica - ancienne VS nouvelle nomenclature - 012026.csv",
+  "date": "20250621",
+  "login": "ProductionCIOdc",
+  "pwd": "Zty2!99486u",
+  "international": "D:\\Data_Import\\Terminologie\\Dev\\Snomed\\ValidateurBatch\\SnomedCT_InternationalRF2_PRODUCTION_20260401T120000Z"
+}

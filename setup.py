@@ -17,12 +17,16 @@ setup(
     packages=['validateur_batch', 'test'],
     install_requires=[
         "numpy",
+        "openpyxl>=3.1.5",
         "pandas",
-        "pytest",
+        "pyarrow>=23.0.1",
         "python-jsonpath",
+        "regex>=2026.2.28",
         "requests",
         "responses",
-        "setuptools"
+        "fastapi",
+        "pydantic",
+        "uvicorn",
     ],
     long_description=read('README.md'),
 )

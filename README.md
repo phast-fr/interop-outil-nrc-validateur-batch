@@ -21,6 +21,24 @@ cd ./interop-outil-nrc-validateur-batch/
 python3 -m pip install -e .
 ```
 
+## Dépendances
+Le projet nécessite les librairies suivantes :
+- **numpy** : Calculs numériques
+- **pandas** : Manipulation de données tabulaires
+- **openpyxl** : Lecture/écriture de fichiers Excel
+- **pyarrow** : Format Parquet pour le cache
+- **python-jsonpath** : Requêtes JSONPath
+- **regex** : Expressions régulières avancées
+- **requests** : Appels HTTP
+- **responses** : Mock pour les tests
+- **fastapi** : API REST (module optionnel)
+- **pydantic** : Validation de données
+- **uvicorn** : Serveur ASGI
+
+Pour le développement :
+- **pytest** : Tests unitaires
+- **ruff** : Linting
+
 ## Utilisation du projet
 Le projet nécessite plusieurs données en entrée :
 - [**OBLIGATOIRE**] Endpoint d'un serveur FHIR contenant l'édition internationale de référence pour le projet
