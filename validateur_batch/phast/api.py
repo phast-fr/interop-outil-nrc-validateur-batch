@@ -12,21 +12,23 @@ from validateur_batch.object import server
 from validateur_batch.control import editorial_check, format_check
 from validateur_batch.phast import utils
 
+try:
+    # Load configuration
+    config_path = os.path.join(os.path.dirname(__file__), "config_api.json")
+    with open(config_path, 'r', encoding='utf-8') as f:
+        config = json.load(f)
 
-# Load configuration
-config_path = os.path.join(os.path.dirname(__file__), "config_api.json")
-with open(config_path, 'r', encoding='utf-8') as f:
-    config = json.load(f)
+    fts = server.Server(config['endpoint'], config['login'], config['pwd'], versioning=config.get("versioning", False), international=config.get("international", None))
+    desc_act_fr = io.read_active_desc_in_fr_ed(config['snapshot'], config['date'])
+    rules = pd.read_csv(config["rules"],  dtype={"en": "string", "fr": "string", "id": "string", "pt": "Int64", "syn": "Int64"}, sep=";")
+    terminology_anatomica = pd.read_csv(config["terminology_anatomica"], dtype=str, sep=";")
 
-fts = server.Server(config['endpoint'], config['login'], config['pwd'], versioning=config.get("versioning", False), international=config.get("international", None))
-desc_act_fr = io.read_active_desc_in_fr_ed(config['snapshot'], config['date'])
-rules = pd.read_csv(config["rules"],  dtype={"en": "string", "fr": "string", "id": "string", "pt": "Int64", "syn": "Int64"}, sep=";")
-terminology_anatomica = pd.read_csv(config["terminology_anatomica"], dtype=str, sep=";")
-
-ecl_body_surface_region = fts.ecl("<< 127947003")
-ecl_anatomical_structure = fts.ecl("<< 91723000")
-ecl_pharmaceutical_biological_product = fts.ecl("<< 373873005")
-ecl_physical_object = fts.ecl("<< 260787004")
+    ecl_body_surface_region = fts.ecl("<< 127947003")
+    ecl_anatomical_structure = fts.ecl("<< 91723000")
+    ecl_pharmaceutical_biological_product = fts.ecl("<< 373873005")
+    ecl_physical_object = fts.ecl("<< 260787004")
+except Exception as ex:
+    print(f"Erreur lors du chargement de la configuration ou des données : {ex}")
 
 app = FastAPI(
     title="Validateur Batch API",

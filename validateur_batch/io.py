@@ -65,19 +65,16 @@ def read_active_desc_in_fr_ed(snapshot: str, date: str) -> pd.DataFrame:
         raise ValueError("Le chemin ne pointe pas vers le dossier Snapshot")
     p = {
         "concept": op.join(
-            snapshot, f"Terminology/sct2_Concept_Snapshot_FR1000315_{date}.txt"
+            snapshot, "Terminology", f"sct2_Concept_Snapshot_FR1000315_{date}.txt"
         ),  # noqa
         "desc_fr": op.join(
-            snapshot,
-            f"Terminology/sct2_Description_Snapshot-fr_FR1000315_{date}.txt",
+            snapshot, "Terminology", f"sct2_Description_Snapshot-fr_FR1000315_{date}.txt",
         ),  # noqa
         "desc_en": op.join(
-            snapshot,
-            f"Terminology/sct2_Description_Snapshot-en_FR1000315_{date}.txt",
+            snapshot, "Terminology", f"sct2_Description_Snapshot-en_FR1000315_{date}.txt",
         ),  # noqa
         "lang": op.join(
-            snapshot,
-            f"Refset/Language/der2_cRefset_LanguageSnapshot-fr_FR1000315_{date}.txt",
+            snapshot, "Refset", "Language", f"der2_cRefset_LanguageSnapshot-fr_FR1000315_{date}.txt",
         ),  # noqa
     }
 
