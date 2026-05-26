@@ -1,3 +1,4 @@
+import logging
 import hashlib
 import json
 import jsonpath
@@ -5,6 +6,8 @@ import requests
 from pathlib import Path
 from typing import Dict, List
 from validateur_batch.object.sctrf2 import SctEd
+
+logger = logging.getLogger(__name__)
 
 
 INACTIVE_STATUS = 0
@@ -221,20 +224,29 @@ class Server:
         returns:
             FSN du concept
         """
+
+        fsn = None
+
         if self.international:
-            return self.international.get_fsn(sctid)
+            try:
+                fsn = self.international.get_fsn(sctid)
+            except KeyError:
+                logger.warning(f"Concept {sctid} non trouvé dans les RF2 de l'édition internationale. Requête envoyée au serveur FTS pour obtenir le FSN.")
+                fsn = None
 
-        data = self.lookup(sctid)
-        p = list(
-            jsonpath.query(
-                "$.parameter[?@name == 'designation'].part[?@valueCoding.code == '900000000000003001']",
-                data,
-            ).pointers()  # noqa
-        )[0]
+        if fsn is None:
+            data = self.lookup(sctid)
+            p = list(
+                jsonpath.query(
+                    "$.parameter[?@name == 'designation'].part[?@valueCoding.code == '900000000000003001']",
+                    data,
+                ).pointers()  # noqa
+            )[0]
+            fsn = next(
+                filter(lambda x: x["name"] == "value", p.resolve_parent(data)[0])
+            )["valueString"]  # noqa
 
-        return next(
-            filter(lambda x: x["name"] == "value", p.resolve_parent(data)[0])
-        )["valueString"]  # noqa
+        return fsn
     
     def get_pten(self, sctid: str) -> str:
         """Donne le PTEN du concept `sctid`
@@ -246,7 +258,12 @@ class Server:
             PTEN du concept
         """
         if self.international:
-            return self.international.get_pten(sctid)
+            try:
+                pten = self.international.get_pten(sctid)
+            except KeyError:
+                logger.warning(f"Concept {sctid} non trouvé dans les RF2 de l'édition internationale.")
+                pten = ""
         else:
-            return ""
+            pten = ""
+        return pten
 
