@@ -5,6 +5,7 @@ import argparse
 import os
 import os.path as op
 import pandas as pd
+from datetime import datetime
 
 from validateur_batch import io
 from validateur_batch.object import batch, server
@@ -13,6 +14,8 @@ from validateur_batch.control import editorial_check, format_check, scope_check
 from validateur_batch.phast import utils
 from validateur_batch.scope import Scope
 from validateur_batch.stats import print_stats
+from validateur_batch.desc_generators.preview_to_file import write_add_file, write_val_file
+from validateur_batch.desc_generators.rule_based_generator import generate_desc_from_rules, update_preview_with_generated
 
 logger = logging.getLogger(__name__)
 
@@ -23,15 +26,15 @@ if __name__ == "__main__":
                      help="Chemin vers la snapshot de l'édition FR")
     cli.add_argument("date", type=str, help="Date de publication de l'édition FR")
     cli.add_argument("output", type=str, help="Dossier où sauvegarder les rapports")
-    cli.add_argument("--val", type=str,
+    cli.add_argument("--val", type=str, nargs="*",
                      help="Chemin vers le CSV des concepts non modifiés")
-    cli.add_argument("--add", type=str,
+    cli.add_argument("--add", type=str, nargs="*",
                      help="Chemin vers le CSV de l'onglet 'Description Additions'")
-    cli.add_argument("--chg", type=str,
+    cli.add_argument("--chg", type=str, nargs="*",
                      help="Chemin vers le CSV de l'onglet 'Description Changes'")
-    cli.add_argument("--rep", type=str,
+    cli.add_argument("--rep", type=str, nargs="*",
                      help="Chemin vers le CSV de l'onglet 'Description Replacement'")
-    cli.add_argument("--ina", type=str,
+    cli.add_argument("--ina", type=str, nargs="*",
                      help="Chemin vers le CSV de l'onglet 'Description Inactivations'")
     cli.add_argument("--login", type=str,
                      help="Login pour accéder au FTS")
@@ -47,6 +50,9 @@ if __name__ == "__main__":
         help="Fichier JSON définissant les concepts constituant le périmètre d'analyse "
         + "(si vide, les concepts présents dans les fichiers csv de transformation "
         + "sont utilisés comme périmètre)",
+    )
+    cli.add_argument("--generate_auto_desc", action="store_true",
+        help="Activer la génération automatique de descriptions supplémentaires à partir de règles éditoriales (ex: bs3)",
     )
 
     args = cli.parse_args()
@@ -80,7 +86,14 @@ if __name__ == "__main__":
         [args.val, args.add, args.chg, args.rep, args.ina],
         ["VAL", "ADD", "CHG", "REP", "INA"]
     )
-    list_b = [batch.Batch(f, t) for f, t in input if f is not None]
+
+    list_b = []
+    for file_list, t in input:
+        if file_list is not None:
+            for file in file_list:
+                print(f"Lecture du fichier {file} de type {t}...")
+                list_b.append(batch.Batch(file, t))
+
     print("Lecture des imports batch - OK")
 
     # Initialiser la preview de la snapshot de l'édition FR
@@ -111,6 +124,19 @@ if __name__ == "__main__":
     preview = preview[["id", "active", "source", "_type_", "conceptId", "FSN", "FSN_no_sem", "PT_EN", "term",
                        "caseSignificanceId", "acceptabilityId"]]
 
+    # Génération de descriptions supplémentaires à partir de règles éditoriales
+    if args.generate_auto_desc:
+        print("\n## Génération de descriptions supplémentaires à partir de règles éditoriales ##")
+        
+        timestr = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+
+        generated_desc = generate_desc_from_rules(preview)
+        write_add_file(op.join(args.output, f"Descriptions_Additions_Gen {timestr}.csv"), generated_desc)
+        print(f"Total des descriptions après génération : {len(preview)}")
+
+        preview = update_preview_with_generated(preview, generated_desc)
+        write_val_file(op.join(args.output, f"Concepts_Revus_Non_Modifiés {timestr}.csv"), preview)
+
     # Vérification du respect des règles éditoriales
     print("\n## Respect des règles éditoriales ##")
     rules = pd.read_csv(os.path.join(os.path.dirname(__file__), "rules.csv"),  dtype={"en": "string", "fr": "string", "id": "string", "pt": "Int64", "syn": "Int64"}, sep=";")
@@ -134,8 +160,6 @@ if __name__ == "__main__":
 
     combined.to_excel(filepath_combined)
 
-    #utils.generate_excel_from_report(filepath_csv, op.join(args.output, "check_results_condenses.xlsx"))
-
     # Vérification de la complétude et de l'exclusivité du périmètre d'analyse
     if scope is not None: 
         print("\n## Vérification du périmètre d'analyse ##")
@@ -151,20 +175,5 @@ if __name__ == "__main__":
     print("\n## Statistiques de vérifications ##")
     print_stats(scope, preview, list_b)
 
-    # Vérification de la complétude et de l'exclusivité du périmètre d'analyse
-    if scope is not None: 
-        print("\n## Vérification du périmètre d'analyse ##")
-        scope_completeness = scope_check.check_scope_completeness(scope, preview)
-        scope_completeness.to_csv(op.join(args.output, "scope_completeness.csv"), sep=";", index=False)
-        scope_completeness.to_excel(op.join(args.output, "scope_completeness.xlsx"), index=False)
-
-        scope_exclusivity = scope_check.check_scope_exclusivity(scope, preview)
-        scope_exclusivity.to_csv(op.join(args.output, "scope_exclusivity.csv"), sep=";", index=False)
-        scope_exclusivity.to_excel(op.join(args.output, "scope_exclusivity.xlsx"), index=False)
-        print("Vérification du périmètre d'analyse - OK")
-
-    # Affichage des statistiques de vérifications
-    print("\n## Statistiques de vérifications ##")
-    print_stats(scope, preview, list_b)
 
 

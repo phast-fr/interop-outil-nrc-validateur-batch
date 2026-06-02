@@ -24,17 +24,16 @@ def print_stats(scope: Scope, preview: pd.DataFrame, batches: list):
     concepts_with_existing_descs = df_nb_existing_descs.loc[df_nb_existing_descs["id"] > 0, "conceptId"]
     print(f"Nombre de concepts avec au moins une description dans la version précédente : {len(concepts_with_existing_descs)}")
 
-    b_val = next((b for b in batches if b.type == "VAL"), None)
-    if b_val is not None:
-        df_val = b_val.df
-        print("Nombre de concepts déjà traduits dans une version précédente, "
-              + f"revus et ne nécessitant pas de modification : {len(df_val)}")
+    nb_val_concepts = preview.loc[preview["_type_"] == "VAL", "conceptId"].unique()
+    print("Nombre de concepts déjà traduits dans une version précédente, "
+          + f"revus et ne nécessitant pas de modification : {len(nb_val_concepts)}")
 
-    preview_existing_descs = preview.loc[preview["conceptId"].isin(df_nb_existing_descs.loc[df_nb_existing_descs["id"] > 0, "conceptId"])]
+    preview_existing_descs = preview.loc[preview["conceptId"].isin(concepts_with_existing_descs)]
     df_modified_descs = preview_existing_descs.loc[(~preview_existing_descs["_type_"].isin(["", "VAL"]))]
     modified_concepts  = df_modified_descs["conceptId"].unique()
     nb_concepts_modified = len(modified_concepts)
     print(f"Nombre de concepts déjà traduits dans la version précédente et désormais modifiés : {nb_concepts_modified}")
+
 
     nb_concepts_new = len(df_nb_existing_descs.loc[df_nb_existing_descs["id"] == 0])
     print(f"Nombre de concepts sans traduction dans la version précédente et désormais traduits : {nb_concepts_new}")

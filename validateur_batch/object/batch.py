@@ -46,7 +46,7 @@ class Batch:
 
         if not all(i == j for i, j in zip(self.df.columns, COL[type])):
             diff = [i for i, j in zip(self.df.columns, COL[type]) if i != j]
-            raise ValueError(f"Colonne(s) du fichier incorrecte(s) : {file} {diff}")
+            raise ValueError(f"Colonne(s) du fichier {type} incorrecte(s) : {file} {diff}")
 
     def _apply_add(self, preview: pd.DataFrame) -> pd.DataFrame:
         """Applique les modifications d'un batch d'addition à `preview`
