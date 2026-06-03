@@ -37,10 +37,26 @@ Le projet nécessite plusieurs données en entrée :
 - [*OPTIONNEL*] `--international` : Chemin vers les RF2 de l'édition internationale (alternative à la récupération via le FTS)
 - [*OPTIONNEL*] `--cache` : Chemin vers le répertoire de cache (défaut : `./cache`)
 - [*OPTIONNEL*] `--scope` : Chemin vers le fichier JSON définissant le périmètre d'analyse
+- [*OPTIONNEL*] `--generate_auto_desc` : Active la génération automatique de descriptions supplémentaires à partir des règles éditoriales (ex : bs3)
+
+> **Note** : les arguments `--val`, `--add`, `--chg`, `--rep` et `--ina` acceptent plusieurs fichiers séparés par des espaces.
 
 ```shell
-./validateur_batch/main.py "endpoint_FTS" "chemin_vers_release_fr/Snapshot/" "YYYYMMDD" "dossier_sauvegarde" --val "chemin_fichier_concept_sans_modification" --add "chemin_fichier_descriptions_à_ajouter" --chg "chemin_fichier_metadonnees_à_modifier" --rep "chemin_fichier_descriptions_à_remplacer" --ina "chemin_fichier_descriptions_à_inactiver" --login "login" --pwd "mot_de_passe" --international "chemin_vers_rf2_international" --cache "chemin_vers_cache" --scope "scope.json"
+./validateur_batch/main.py "endpoint_FTS" "chemin_vers_release_fr/Snapshot/" "YYYYMMDD" "dossier_sauvegarde" --val "chemin_fichier_concept_sans_modification" --add "chemin_fichier_descriptions_à_ajouter" --chg "chemin_fichier_metadonnees_à_modifier" --rep "chemin_fichier_descriptions_à_remplacer" --ina "chemin_fichier_descriptions_à_inactiver" --login "login" --pwd "mot_de_passe" --international "chemin_vers_rf2_international" --cache "chemin_vers_cache" --scope "scope.json" --generate_auto_desc
 ```
+
+## Génération automatique de descriptions
+
+L'option `--generate_auto_desc` déclenche la génération de descriptions supplémentaires à partir des règles éditoriales implémentées. Les fichiers produits sont écrits dans le dossier de sortie avec un horodatage :
+
+- `Descriptions_Additions_Gen YYYY-MM-DD HH-MM-SS.csv` : descriptions générées, au format du template d'import batch (onglet *Description Additions*)
+- `Concepts_Revus_Non_Modifiés YYYY-MM-DD HH-MM-SS.csv` : liste mise à jour des concepts sans modification, tenant compte des descriptions générées (format CSV et XLSX)
+
+Les règles de génération actuellement implémentées sont :
+
+| Règle | Description |
+| ----- | ----------- |
+| bs3   | Si le FSN contient « structure », génère un synonyme acceptable `<PT_FR>, structure` |
 
 ## Fichiers RF2
 - Téléchargement de la dernière version de l'édition française SNOMED CT : https://smt.esante.gouv.fr/terminologie-snomed-ct-fr/
