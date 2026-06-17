@@ -1,3 +1,5 @@
+from typing import List
+
 import regex
 import re
 import unicodedata
@@ -229,7 +231,7 @@ def _check_or4(df: pd.DataFrame) -> pd.DataFrame:
     mask = {}
     mask_error = pd.Series([False]*len(df), df.index)
     for prefix in ["demin", "mi", "semi", "ex", "sous", "vice", "non"]:
-        mask[prefix] = df["term"].str.contains(f"\b{prefix}[^\-]", regex=True)
+        mask[prefix] = df["term"].str.contains(rf"\b{prefix}[^\-]", regex=True)
         mask_error = mask_error | mask[prefix]
     
     if mask_error.any():
@@ -344,6 +346,35 @@ def _remove_accents(s):
         if unicodedata.category(c) != 'Mn'
     )
 
+
+def _pattern_from_terminology_anatomica(nomenclature: List[str]) -> str:
+    """Construit un pattern regex à partir de la terminologie anatomique.
+    Soit la liste des anciens termes, soit la liste des nouveaux termes
+
+    args:
+        nomenclature: Liste des termes de la terminologie anatomique
+
+    returns:
+        Pattern regex pour identifier les termes de la terminologie anatomique
+    """
+    entre_par = re.compile(r'\(.*\)')
+
+    lower_unaccented_nomenclature = [
+        str.lower(entre_par.sub('',_remove_accents(t)))
+        for t in nomenclature
+    ]
+    lower_unaccented_nomenclature = [
+        str.strip(part)
+        for item in lower_unaccented_nomenclature
+        for part in item.split("/")
+        if part  # garde uniquement les non vides
+    ]
+
+    pattern_list = [f"(?:{s})" for s in lower_unaccented_nomenclature]
+    pattern = "|".join(pattern_list)
+    return pattern
+
+
 def _check_bs4(
     df: pd.DataFrame, anats: pd.Series, terminology_anatomica: pd.DataFrame, pt: pd.Series) -> pd.DataFrame:
     """Identifie les descriptions ne respectant pas la règle bs4
@@ -356,40 +387,21 @@ def _check_bs4(
         DataFrame du fichier avec une colonne identifiant les
         descriptions ne respectant pas la règle bs4.
     """
-    entre_par = re.compile(r'\(.*\)')
  
-    lower_unacceted_old_nomenclature = [
-        str.lower(entre_par.sub('',_remove_accents(t)))
-        for t in terminology_anatomica["Ancienne nomenclature"]
-    ]
-    lower_unacceted_old_nomenclature = [
-        str.strip(part)
-        for item in lower_unacceted_old_nomenclature
-        for part in item.split("/")
-        if part  # garde uniquement les non vides
-    ]
+    pattern_old = _pattern_from_terminology_anatomica(terminology_anatomica["Ancienne nomenclature"])
+    pattern_new = _pattern_from_terminology_anatomica(terminology_anatomica["Nouvelle nomenclature"])
 
-    pattern_list = [f"(?:{s})" for s in lower_unacceted_old_nomenclature]
-    pattern = "|".join(pattern_list)
     df_check_ta = df.copy()
     df_check_ta["term_no_accents"] = df_check_ta["term"].apply(_remove_accents)
 
     mask_ta = (
         pt 
         & anats 
-        & df_check_ta["term_no_accents"].str.contains(pattern, case=False, na=False)
+        & df_check_ta["term_no_accents"].str.contains(pattern_old, case=False, na=False)
+        & ~df_check_ta["term_no_accents"].str.contains(pattern_new, case=False, na=False)
     )
 
     filtered_df = df_check_ta[mask_ta].copy()
-    filtered_df["matched_term_no_accents"] = (
-        filtered_df["term_no_accents"]
-        .str.extract(f"({pattern})", flags=re.IGNORECASE)
-    )
-
-    filtered_df.to_excel("ar4.xlsx")
-
-    with open("pattern.txt", "w") as file:
-        file.write(pattern)
 
     idx = filtered_df.index
 

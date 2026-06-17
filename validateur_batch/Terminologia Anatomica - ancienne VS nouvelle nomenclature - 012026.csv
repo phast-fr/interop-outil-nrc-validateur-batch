@@ -12,7 +12,6 @@ Angle de His;Incisure cardiale
 Anneau de Waldeyer;Anneau lymphoïde du pharynx
 Anneau de Zinn;Anneau tendineux commun
 Anse de Galien;Rameau communiquant avec le nerf laryngé inférieur
-Anse de Henle;Anse du néphron
 Anse de l'hypoglosse;Anse cervicale
 Antéhypophyse;Adénohypophyse
 Antre gastrique;Antre pylorique
@@ -247,6 +246,7 @@ Ligament Annulaire Dorsal Du Carpe;Rétinaculum Des Extenseurs
 Ligament Annulaire Du Carpe;Rétinaculum Des Fléchisseurs Des Doigts
 Ligament Annulaire Externe Du Tarse;Rétinaculum Inférieur Des Muscles Fibulaires
 Ligament Annulaire Interne Du Tarse;Rétinaculum Des Muscles Fléchisseurs Des Orteils
+Ligament Annulaire .*Du Radius;Ligament Annulaire .*Du Radius
 Ligament Astragalocalcanéen;Ligament Talocalcanéen Interosseux
 Ligament Astragalocalcanéen Externe;Ligament Talocalcanéen Latéral
 Ligament Astragalocalcanéen Interne;Ligament Talocalcanéen Médial
@@ -399,8 +399,6 @@ Région Fessière;Région Glutéale
 Renflement lombaire;Intumescence lombale
 Rotule;Patella
 Ruban de Reil;Lemniscus
-Scaphoïde (main);Os scaphoïde
-Scaphoïde (pied) / Scaphoïde Du Tarse;Os naviculaire
 Sinus longitudinal supérieur;Sinus sagittal supérieur
 spinosum;épineux
 Tendon D'achille;Tendon Calcanéen
