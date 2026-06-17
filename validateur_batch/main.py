@@ -52,7 +52,8 @@ if __name__ == "__main__":
         + "sont utilisés comme périmètre)",
     )
     cli.add_argument("--generate_auto_desc", action="store_true",
-        help="Activer la génération automatique de descriptions supplémentaires à partir de règles éditoriales (ex: bs3)",
+        help="Activer la génération automatique de descriptions supplémentaires "
+         "à partir de règles éditoriales (ex: bs3)",
     )
 
     args = cli.parse_args()
@@ -74,6 +75,7 @@ if __name__ == "__main__":
         print("Construction du périmètre d'analyse à partir du fichier JSON de périmètre...", end="\r")
         scope = Scope(args.scope, fts)
         scope_df = scope.full_scope_df
+        scope_df.to_csv(op.join(args.output, "scope_concepts.csv"), sep=";", index=False)
         print("Construction du périmètre d'analyse à partir du fichier JSON de périmètre - OK")
     else:
         scope = None

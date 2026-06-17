@@ -87,6 +87,18 @@ Le fichier est au format JSON et contient un tableau de sections. Chaque section
 ]
 ```
 
+Un fichier `scope_concepts.csv` est généré dans le répertoire de sortie 
+contenant, pour chaque concept du périmètre, 
+le nom de la section, le sctid, le fsn et le terme préféré anglais
+
+Un fichier `scope_completeness.csv` (et sa version excel) est généré contenant
+une ligne par concept du périmètre défini par le fichier scope et indiquant
+dans la colonne `in_delivery` si le concept est présent dans la livraison.
+
+Un fichier `scope_exclusivity.csv` (et sa version excel) est généré contenant
+une ligne par concept de la livraison et indiquant dans la colonne `in_scope`
+si le concept était bien prévu dans le périmètre défini par le fichier scope.
+
 ## Fichiers d'entrée valides
 Ce projet peut valider jusqu'à 5 fichiers différents dans le cadre d'une tâche de traduction ou révision de traductions. Tous ces fichiers sont à mettre au format CSV.
 
