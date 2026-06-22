@@ -333,6 +333,27 @@ def _check_bs3(df: pd.DataFrame, bs: pd.Series, pt: pd.Series, syn: pd.Series) -
     if not idx.empty:
         df = pd.merge(df, pd.DataFrame(data={"bs3-part": ["1"] * len(idx)}, index=idx),
                       how="left", left_index=True, right_index=True, validate="1:1")
+
+    # recherche des concepts avec "structure" dans le FSN et ", structure" dans un SA
+    concepts_with_sa_comma_structure = df.loc[
+        bs & syn
+        & (df.loc[:, "FSN_no_sem"].str.contains("structure", regex=False, case=False)) # noqa
+        & (df.loc[:, "term"].str.contains(r", structure^", case=False))
+        , "conceptId"
+        ].unique() # noqa
+
+    # recherche des concepts avec "structure" dans le FSN mais aucun SA contenant ", structure"
+    idx_missing_sa_comma_structure = df.loc[
+        bs & pt
+        & (df.loc[:, "FSN_no_sem"].str.contains("structure", regex=False, case=False)) # noqa
+        & (~df.loc[:, "conceptId"].isin(concepts_with_sa_comma_structure))
+        , "conceptId"
+        ].index # noqa
+
+    if not idx_missing_sa_comma_structure.empty:
+        df = pd.merge(df, pd.DataFrame(data={"bs3-virg": ["1"] * len(idx_missing_sa_comma_structure)}, index=idx_missing_sa_comma_structure),
+                      how="left", left_index=True, right_index=True, validate="1:1")
+
     return df
 
 def _remove_accents(s):
@@ -565,7 +586,7 @@ def _check_bs9(df: pd.DataFrame, pt: pd.Series, syn: pd.Series) -> pd.DataFrame:
         ].index # noqa
 
     if not idx_missing_sa_lateral.empty:
-        df = pd.merge(df, pd.DataFrame(data={"bs9_lat": ["1"] * len(idx_missing_sa_lateral)}, index=idx_missing_sa_lateral),
+        df = pd.merge(df, pd.DataFrame(data={"bs9-lat": ["1"] * len(idx_missing_sa_lateral)}, index=idx_missing_sa_lateral),
                       how="left", left_index=True, right_index=True, validate="1:1")
 
     return df
