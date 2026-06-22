@@ -540,7 +540,7 @@ def _check_bs9(df: pd.DataFrame, pt: pd.Series, syn: pd.Series) -> pd.DataFrame:
 
     idx = idx.union(df.loc[syn
                            & (df.loc[:, "FSN_no_sem"].str.contains("lesser toe", regex=False, case=False)) # noqa
-                           & (~df.loc[:, "term"].str.contains("orteil latéral", case=False))].index) # noqa
+                           & (~df.loc[:, "term"].str.contains("(?:orteil latéral|orteil excepté l'hallux)", case=False))].index) # noqa
 
     idx = idx.union(df.loc[(df.loc[:, "FSN_no_sem"].str.contains("lesser toe", regex=False, case=False)) # noqa
                            & (df.loc[:, "term"].str.contains("petit orteil", case=False))].index) # noqa
