@@ -545,8 +545,27 @@ def _check_bs9(df: pd.DataFrame, pt: pd.Series, syn: pd.Series) -> pd.DataFrame:
     idx = idx.union(df.loc[(df.loc[:, "FSN_no_sem"].str.contains("lesser toe", regex=False, case=False)) # noqa
                            & (df.loc[:, "term"].str.contains("petit orteil", case=False))].index) # noqa
 
+
     if not idx.empty:
         df = pd.merge(df, pd.DataFrame(data={"bs9": ["1"] * len(idx)}, index=idx),
+                      how="left", left_index=True, right_index=True, validate="1:1")
+
+    concepts_with_sa_lateral = df.loc[
+        syn
+        & (df.loc[:, "FSN_no_sem"].str.contains("lesser toe", regex=False, case=False)) # noqa
+        & (df.loc[:, "term"].str.contains("(?:orteil latéral)", case=False))
+        , "conceptId"
+        ].unique() # noqa
+
+    idx_missing_sa_lateral = df.loc[
+        pt
+        & (df.loc[:, "FSN_no_sem"].str.contains("lesser toe", regex=False, case=False)) # noqa
+        & (~df.loc[:, "conceptId"].isin(concepts_with_sa_lateral))
+        , "conceptId"
+        ].index # noqa
+
+    if not idx_missing_sa_lateral.empty:
+        df = pd.merge(df, pd.DataFrame(data={"bs9_lat": ["1"] * len(idx_missing_sa_lateral)}, index=idx_missing_sa_lateral),
                       how="left", left_index=True, right_index=True, validate="1:1")
 
     return df
