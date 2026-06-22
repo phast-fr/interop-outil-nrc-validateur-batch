@@ -230,8 +230,13 @@ def _check_or4(df: pd.DataFrame) -> pd.DataFrame:
     """
     mask = {}
     mask_error = pd.Series([False]*len(df), df.index)
-    for prefix in ["demin", "mi", "semi", "ex", "sous", "vice", "non"]:
-        mask[prefix] = df["term"].str.contains(rf"\b{prefix}[^\-]", regex=True)
+    PREFIXES = ["demi", "mi", "semi", "ex", "sous", "vice", "non"]
+    EXCEPTIONS = ["extern", "extrém", "extrem", "excré", "mineur", "micro", "mini", "mitral", "extra", "except"]
+    for prefix in PREFIXES:
+        mask[prefix] = (
+            df["term"].str.contains(rf"\b{prefix}[^\-]", regex=True) &
+            ~df["term"].str.contains(rf"\b(?:{'|'.join(EXCEPTIONS)})", regex=True)
+        )
         mask_error = mask_error | mask[prefix]
     
     if mask_error.any():
