@@ -338,7 +338,7 @@ def _check_bs3(df: pd.DataFrame, bs: pd.Series, pt: pd.Series, syn: pd.Series) -
     concepts_with_sa_comma_structure = df.loc[
         bs & syn
         & (df.loc[:, "FSN_no_sem"].str.contains("structure", regex=False, case=False)) # noqa
-        & (df.loc[:, "term"].str.contains(r", structure^", case=False))
+        & (df.loc[:, "term"].str.contains(r", structure$", case=False))
         , "conceptId"
         ].unique() # noqa
 
