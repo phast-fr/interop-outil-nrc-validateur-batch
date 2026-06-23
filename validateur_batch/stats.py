@@ -11,12 +11,11 @@ def print_stats(scope: Scope, preview: pd.DataFrame, batches: list):
 
     """
     if scope is None:
-        print("Périmètre d'analyse non défini. Impossible d'afficher les statistiques de vérifications.") 
-        return
-    
-    print(f"Nombre de concepts dans le périmètre commandé : {len(scope.full_scope_df)}")
-    for section in scope.sections:
-        print(f"Nombre de concepts commandés dans la section '{section}' : {len(scope.get_section_df(section))}")
+        print("Périmètre d'analyse non défini. Impossible d'afficher les statistiques par section commandée.") 
+    else:    
+        print(f"Nombre de concepts dans le périmètre commandé : {len(scope.full_scope_df)}")
+        for section in scope.sections:
+            print(f"Nombre de concepts commandés dans la section '{section}' : {len(scope.get_section_df(section))}")
 
     print(f"Nombre de concepts dans les fichiers livrés : {preview.loc[preview['source'] == 'delivery', 'conceptId'].nunique()}")
 
