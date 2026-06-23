@@ -108,7 +108,7 @@ if __name__ == "__main__":
         # Vérification du respect du format
         format_checks = b.check_format(fts)
         format_checks.to_csv(
-            op.join(args.output, f"{b.type}_format_checks.csv"),
+            op.join(args.output, f"{op.splitext(op.basename(b.file))[0]}_format_checks.csv"),
             sep=";",
             index=False
         )
@@ -133,11 +133,11 @@ if __name__ == "__main__":
         timestr = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
 
         generated_desc = generate_desc_from_rules(preview)
-        write_add_file(op.join(args.output, f"Descriptions_Additions_Gen {timestr}.csv"), generated_desc)
+        write_add_file(op.join(args.output, f"Gen_Descriptions_Additions {timestr}.csv"), generated_desc)
         print(f"Total des descriptions après génération : {len(preview)}")
 
         preview = update_preview_with_generated(preview, generated_desc)
-        write_val_file(op.join(args.output, f"Concepts_Revus_Non_Modifiés {timestr}.csv"), preview)
+        write_val_file(op.join(args.output, f"Gen_Concepts_Revus_Non_Modifiés {timestr}.csv"), preview)
 
     # Vérification du respect des règles éditoriales
     print("\n## Respect des règles éditoriales ##")
