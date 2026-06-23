@@ -611,7 +611,7 @@ def _check_bs10(df: pd.DataFrame, pt: pd.Series, syn: pd.Series) -> pd.DataFrame
 
     idx_lower_limb_syn = df.loc[syn & 
                  (df.loc[:, "FSN"].str.contains("lower limb", regex=False, case=False))
-                 & (~df.loc[:, "term"].str.contains(r"\b(?:membre(?: (?:droit|gauche)) inférieur|membrum inferius|membri inferioris)\b", regex=True, case=False))].index # noqa
+                 & (~df.loc[:, "term"].str.contains(r"\b(?:membre(?: (?:entier|droit|gauche))* inférieur|membrum inferius|membri inferioris)\b", regex=True, case=False))].index # noqa
 
     idx_lower_limb = idx_lower_limb_pt.union(idx_lower_limb_syn)
     if not idx_lower_limb.empty:
@@ -684,7 +684,7 @@ def _check_bs11(df: pd.DataFrame, pt: pd.Series, syn: pd.Series) -> pd.DataFrame
 
     idx_limb_syn = df.loc[syn &
                  (df.loc[:, "FSN_no_sem"].str.contains("upper limb", regex=False, case=False))
-                 & (~df.loc[:, "term"].str.contains(r"\b(?:membre supérieur|membrum superius|membri superioris)\b", regex=True, case=False))].index # noqa  
+                 & (~df.loc[:, "term"].str.contains(r"\b(?:membre(?: (?:entier|droit|gauche))* supérieur|membrum superius|membri superioris)\b", regex=True, case=False))].index # noqa  
 
     idx_limb = idx_limb_pt.union(idx_limb_syn)
     if not idx_limb.empty:
