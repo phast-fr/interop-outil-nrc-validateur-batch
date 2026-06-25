@@ -478,13 +478,9 @@ def _check_bs6(df: pd.DataFrame, bs: pd.Series, bsr: pd.Series, pt: pd.Series, s
         descriptions ne respectant pas la règle bs6.
     """
 
-    idx = df.loc[bs
-                 & (df.loc[:, "FSN_no_sem"].str.contains("zone", regex=False, case=False))
-                 & (~df.loc[:, "term"].str.contains("zone", regex=False, case=False))].index # noqa
-
-    idx = idx.union(df.loc[bs & bsr
-                           & (df.loc[:, "FSN_no_sem"].str.contains(r"\barea\b", regex=True, case=False)) # noqa
-                           & (~df.loc[:, "term"].str.contains(r"\b(?:zone|surface|aire)\b", case=False))].index) # noqa
+    idx = df.loc[pt & bs
+                & (df.loc[:, "FSN_no_sem"].str.contains(r"\b(?:area|zone)\b", regex=True, case=False)) # noqa
+                & (~df.loc[:, "term"].str.contains(r"\b(?:zone|surface|aire)\b", case=False))].index
 
     if not idx.empty:
         df = pd.merge(df, pd.DataFrame(data={"bs6": ["1"] * len(idx)}, index=idx),
@@ -530,11 +526,7 @@ def _check_bs8(df: pd.DataFrame, pt: pd.Series, syn: pd.Series) -> pd.DataFrame:
     """
     idx = df.loc[pt
                  & (df.loc[:, "FSN_no_sem"].str.contains("apex", regex=False, case=False))
-                 & (~df.loc[:, "term"].str.contains("apex", regex=False, case=False))].index # noqa
-
-    idx = idx.union(df.loc[syn
-                           & (df.loc[:, "FSN_no_sem"].str.contains(r"\bapex\b", regex=True, case=False)) # noqa
-                           & (~df.loc[:, "term"].str.contains(r"(?:apex|pointe|bout|cime)", case=False))].index) # noqa
+                 & (~df.loc[:, "term"].str.contains(r"(?:apex|pointe|bout|cime)", case=False))].index # noqa
 
     if not idx.empty:
         df = pd.merge(df, pd.DataFrame(data={"bs8": ["1"] * len(idx)}, index=idx),
