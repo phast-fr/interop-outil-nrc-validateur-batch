@@ -16,6 +16,10 @@ from validateur_batch.scope import Scope
 from validateur_batch.stats import print_stats
 from validateur_batch.desc_generators.preview_to_file import write_add_file, write_val_file
 from validateur_batch.desc_generators.rule_based_generator import generate_desc_from_rules, update_preview_with_generated
+from validateur_batch.delivery_converter import (
+    DeliveryConversionError,
+    prepare_delivery_inputs,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +40,14 @@ if __name__ == "__main__":
                      help="Chemin vers le CSV de l'onglet 'Description Replacement'")
     cli.add_argument("--ina", type=str, nargs="*",
                      help="Chemin vers le CSV de l'onglet 'Description Inactivations'")
+    cli.add_argument(
+        "--delivery",
+        type=str,
+        help=(
+            "Chemin vers un classeur de livraison finale à reconditionner selon "
+            "la règle REMP avant d'exécuter le validateur"
+        ),
+    )
     cli.add_argument("--login", type=str,
                      help="Login pour accéder au FTS")
     cli.add_argument("--pwd", type=str,
@@ -58,6 +70,8 @@ if __name__ == "__main__":
 
     args = cli.parse_args()
 
+    os.makedirs(args.output, exist_ok=True)
+
     logging.basicConfig(
         level=logging.DEBUG,
         format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s',
@@ -68,6 +82,33 @@ if __name__ == "__main__":
     # Initialisation de la classe de gestion du FTS
     international = SctEd(args.international, args.cache) if args.international else None
     fts = server.Server(args.endpoint, args.login, args.pwd, versioning=args.versioning, international=international)
+
+    # Le RF2 français est aussi la source de vérité pour vérifier les Description ID
+    # lors du reconditionnement d'une livraison.
+    desc_act_fr = None
+    if args.delivery:
+        print("\n## Reconditionnement de la livraison ##")
+        desc_act_fr = io.read_active_desc_in_fr_ed(args.snapshot, args.date)
+        try:
+            prepared = prepare_delivery_inputs(
+                args.delivery, desc_act_fr, args.output
+            )
+        except DeliveryConversionError as exc:
+            logger.error("Reconditionnement impossible : %s", exc)
+            raise SystemExit(1) from exc
+        for batch_type, filepath in prepared.batch_files.items():
+            argument_name = batch_type.lower()
+            current_files = getattr(args, argument_name) or []
+            setattr(args, argument_name, current_files + [filepath])
+        print(f"Classeur reconditionné : {prepared.workbook}")
+        print(f"Rapport de conversion : {prepared.report}")
+        if prepared.rejected_rows:
+            logger.error(
+                "%s ligne(s) de livraison rejetée(s) et exclue(s) des livrables. "
+                "Consulter %s.",
+                prepared.rejected_rows,
+                prepared.error_report,
+            )
 
     # Construction du périmètre d'analyse
     if args.scope is not None:
@@ -100,7 +141,8 @@ if __name__ == "__main__":
 
     # Initialiser la preview de la snapshot de l'édition FR
     print("\n## Snapshot FR ##")
-    desc_act_fr = io.read_active_desc_in_fr_ed(args.snapshot, args.date)
+    if desc_act_fr is None:
+        desc_act_fr = io.read_active_desc_in_fr_ed(args.snapshot, args.date)
     preview = io.select_desc(desc_act_fr, list_b, scope)
     
     print("\n\n## Respect du format ##")

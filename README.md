@@ -32,6 +32,7 @@ Le projet nécessite plusieurs données en entrée :
 - [*OPTIONNEL*] `--chg` : Chemin du fichier des métadonnées de descriptions à modifier
 - [*OPTIONNEL*] `--rep` : Chemin du fichier des descriptions à remplacer par une nouvelle traduction
 - [*OPTIONNEL*] `--ina` : Chemin du fichier des descriptions à inactiver
+- [*OPTIONNEL*] `--delivery` : Chemin d'un classeur de livraison finale à reconditionner avant validation
 - [*OPTIONNEL*] `--login` : Login pour accéder au FTS
 - [*OPTIONNEL*] `--pwd` : Mot de passe pour accéder au FTS
 - [*OPTIONNEL*] `--international` : Chemin vers les RF2 de l'édition internationale (alternative à la récupération via le FTS)
@@ -44,6 +45,26 @@ Le projet nécessite plusieurs données en entrée :
 ```shell
 ./validateur_batch/main.py "endpoint_FTS" "chemin_vers_release_fr/Snapshot/" "YYYYMMDD" "dossier_sauvegarde" --val "chemin_fichier_concept_sans_modification" --add "chemin_fichier_descriptions_à_ajouter" --chg "chemin_fichier_metadonnees_à_modifier" --rep "chemin_fichier_descriptions_à_remplacer" --ina "chemin_fichier_descriptions_à_inactiver" --login "login" --pwd "mot_de_passe" --international "chemin_vers_rf2_international" --cache "chemin_vers_cache" --scope "scope.json" --generate_auto_desc
 ```
+
+### Reconditionnement d'une livraison finale
+
+L'argument `--delivery` applique la contrainte REMP ASCT-188 avant de lancer
+les contrôles habituels :
+
+- un remplacement par une nouvelle traduction reste dans *Description Replacements* ;
+- un remplacement par un synonyme acceptable existant devient une promotion
+  dans *Description Changes* et une inactivation de l'ancien PT dans
+  *Description Inactivations*.
+
+```shell
+./validateur_batch/main.py "endpoint_FTS" "chemin_vers_release_fr/Snapshot/" "YYYYMMDD" "dossier_sauvegarde" --delivery "livraison.xlsx" --val "concepts_non_modifies.csv" --scope "scope.json"
+```
+
+Le dossier `recreated_inputs` contient le classeur reconditionné, les fichiers
+CSV compacts utilisés par le validateur et `conversion_report.csv`. Le classeur
+source n'est jamais modifié. Le fichier `--val` peut être fourni en complément
+car le classeur de modifications ne contient pas les concepts revus sans
+modification.
 
 ## Génération automatique de descriptions
 
