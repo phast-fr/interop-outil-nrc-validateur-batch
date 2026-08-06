@@ -20,6 +20,7 @@ from validateur_batch.delivery_converter import (
     DeliveryConversionError,
     prepare_delivery_inputs,
 )
+from validateur_batch.lookup_sct import build_lookup_sct
 
 logger = logging.getLogger(__name__)
 
@@ -67,8 +68,21 @@ if __name__ == "__main__":
         help="Activer la génération automatique de descriptions supplémentaires "
          "à partir de règles éditoriales (ex: bs3)",
     )
+    cli.add_argument(
+        "--build_lookup_sct",
+        type=str,
+        help=(
+            "Chemin du CSV LOOKUP_SCT à générer à partir du périmètre d'analyse "
+            "et du RF2 français (nécessite --scope)"
+        ),
+    )
 
     args = cli.parse_args()
+
+    if args.build_lookup_sct and args.scope is None:
+        raise SystemExit(
+            "--build_lookup_sct nécessite --scope pour construire le périmètre d'analyse."
+        )
 
     os.makedirs(args.output, exist_ok=True)
 
@@ -116,8 +130,16 @@ if __name__ == "__main__":
         print("Construction du périmètre d'analyse à partir du fichier JSON de périmètre...", end="\r")
         scope = Scope(args.scope, fts)
         scope_df = scope.full_scope_df
-        scope_df.to_csv(op.join(args.output, "scope_concepts.csv"), sep=";", index=False)
+        scope_concepts_path = op.join(args.output, "scope_concepts.csv")
+        scope_df.to_csv(scope_concepts_path, sep=";", index=False)
         print("Construction du périmètre d'analyse à partir du fichier JSON de périmètre - OK")
+
+        if args.build_lookup_sct:
+            print("\n## Construction de l'onglet LOOKUP_SCT ##")
+            build_lookup_sct(
+                scope_concepts_path, args.snapshot, args.date, args.build_lookup_sct
+            )
+            print(f"LOOKUP_SCT généré : {args.build_lookup_sct}")
     else:
         scope = None
         scope_df = None

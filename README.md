@@ -39,6 +39,7 @@ Le projet nécessite plusieurs données en entrée :
 - [*OPTIONNEL*] `--cache` : Chemin vers le répertoire de cache (défaut : `./cache`)
 - [*OPTIONNEL*] `--scope` : Chemin vers le fichier JSON définissant le périmètre d'analyse
 - [*OPTIONNEL*] `--generate_auto_desc` : Active la génération automatique de descriptions supplémentaires à partir des règles éditoriales (ex : bs3)
+- [*OPTIONNEL*] `--build_lookup_sct` : Chemin du CSV LOOKUP_SCT à générer à partir du périmètre d'analyse et du RF2 français (nécessite `--scope`)
 
 > **Note** : les arguments `--val`, `--add`, `--chg`, `--rep` et `--ina` acceptent plusieurs fichiers séparés par des espaces.
 
@@ -65,6 +66,28 @@ Le dossier `recreated_inputs` contient le classeur reconditionné, les fichiers
 CSV compacts utilisés par le validateur et `conversion_report.csv`, ainsi que
 `conversion_errors.csv` si des remplacements ont été rejetés. Le classeur
 source n'est jamais modifié.
+
+### Construction de l'onglet LOOKUP_SCT
+
+L'argument `--build_lookup_sct` (nécessite `--scope`) génère, à partir du
+périmètre d'analyse et du RF2 de l'édition française, un CSV au format de
+l'onglet `LOOKUP_SCT` des workbooks de traduction : pour chaque concept du
+périmètre, le PT français, le FSN français (s'il existe) et jusqu'à 20
+synonymes acceptables français, chacun avec son Description ID et sa Case
+Significance, triés par Description ID croissant.
+
+```shell
+./validateur_batch/main.py "endpoint_FTS" "chemin_vers_release_fr/Snapshot/" "YYYYMMDD" "dossier_sauvegarde" --scope "scope.json" --build_lookup_sct "lookup_sct.csv"
+```
+
+Cette construction est purement locale (RF2), sans appel au serveur FTS au-delà
+de la construction du périmètre d'analyse elle-même. Le script peut aussi être
+utilisé de façon autonome avec n'importe quel CSV contenant une colonne
+`conceptId` :
+
+```shell
+./validateur_batch/lookup_sct.py "scope_concepts.csv" "chemin_vers_release_fr/Snapshot/" "YYYYMMDD" "lookup_sct.csv"
+```
 
 ## Génération automatique de descriptions
 
