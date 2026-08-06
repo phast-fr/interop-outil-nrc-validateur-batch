@@ -19,6 +19,8 @@ from validateur_batch.io import ACCEPT, CASE
 
 FSN_TYPE = "900000000000003001"
 SYNONYM_TYPE = "900000000000013009"
+US_ENGLISH_REFSET = "900000000000509007"
+PREFERRED = "900000000000548007"
 MAX_SYNONYMS = 20
 
 HEADERS = [
@@ -96,10 +98,70 @@ def _read_fr_fsn_and_synonyms(snapshot: str, date: str) -> pd.DataFrame:
     return desc
 
 
+def _read_en_fsn_and_pt(snapshot: str, date: str) -> pd.DataFrame:
+    """Lit les FSN et PT US anglais actifs de l'édition RF2 fournie."""
+    desc_path = op.join(
+        snapshot, f"Terminology/sct2_Description_Snapshot-en_FR1000315_{date}.txt"
+    )
+    lang_path = op.join(
+        snapshot,
+        f"Refset/Language/der2_cRefset_LanguageSnapshot-en_FR1000315_{date}.txt",
+    )
+    desc = pd.read_csv(
+        desc_path,
+        sep="\t",
+        quoting=3,
+        na_filter=False,
+        usecols=["id", "active", "conceptId", "typeId", "term", "caseSignificanceId"],
+        dtype={
+            "id": str,
+            "active": pd.CategoricalDtype(["1", "0"]),
+            "conceptId": str,
+            "typeId": str,
+            "term": object,
+        },
+    )
+    desc = desc.loc[
+        (desc["active"] == "1") & desc["typeId"].isin([FSN_TYPE, SYNONYM_TYPE])
+    ].copy()
+
+    lang = pd.read_csv(
+        lang_path,
+        sep="\t",
+        na_filter=False,
+        usecols=["active", "refsetId", "referencedComponentId", "acceptabilityId"],
+        dtype={
+            "active": pd.CategoricalDtype(["1", "0"]),
+            "refsetId": str,
+            "referencedComponentId": str,
+            "acceptabilityId": str,
+        },
+    )
+    preferred_ids = set(
+        lang.loc[
+            (lang["active"] == "1")
+            & (lang["refsetId"] == US_ENGLISH_REFSET)
+            & (lang["acceptabilityId"] == PREFERRED),
+            "referencedComponentId",
+        ]
+    )
+    desc["isPreferredUS"] = desc["id"].isin(preferred_ids)
+    return desc
+
+
 def _concept_row(
-    concept_id: str, fsn_en: str, pten_en: str, concept_desc: pd.DataFrame
+    concept_id: str,
+    scope_fsn_en: str,
+    scope_pten_en: str,
+    concept_desc: pd.DataFrame,
+    concept_desc_en: pd.DataFrame,
 ) -> list:
     """Construit une ligne LOOKUP_SCT pour un concept à partir de ses descriptions FR."""
+    fsn_en = concept_desc_en.loc[concept_desc_en["typeId"] == FSN_TYPE]
+    pt_en = concept_desc_en.loc[
+        (concept_desc_en["typeId"] == SYNONYM_TYPE)
+        & concept_desc_en["isPreferredUS"]
+    ]
     fsn_fr = concept_desc.loc[concept_desc["typeId"] == FSN_TYPE]
     pt_fr = concept_desc.loc[
         (concept_desc["typeId"] == SYNONYM_TYPE)
@@ -110,7 +172,17 @@ def _concept_row(
         & (concept_desc["acceptabilityId"] == "ACCEPTABLE")
     ].sort_values("id")
 
-    row = [concept_id, fsn_en, "", "", pten_en, "", ""]
+    if not fsn_en.empty:
+        fsn = fsn_en.iloc[0]
+        row = [concept_id, fsn["term"], fsn["id"], fsn["caseSignificanceId"]]
+    else:
+        row = [concept_id, scope_fsn_en, "", ""]
+
+    if not pt_en.empty:
+        pt = pt_en.iloc[0]
+        row += [pt["term"], pt["id"], pt["caseSignificanceId"]]
+    else:
+        row += [scope_pten_en, "", ""]
 
     if not pt_fr.empty:
         pt = pt_fr.iloc[0]
@@ -142,16 +214,27 @@ def build_lookup_sct(
         subset="conceptId"
     )
 
+    concept_ids = set(scope["conceptId"])
     fr_desc = _read_fr_fsn_and_synonyms(snapshot, date)
-    empty = fr_desc.iloc[0:0]
-    by_concept = {concept_id: df for concept_id, df in fr_desc.groupby("conceptId")}
+    fr_desc = fr_desc.loc[fr_desc["conceptId"].isin(concept_ids)]
+    en_desc = _read_en_fsn_and_pt(snapshot, date)
+    en_desc = en_desc.loc[en_desc["conceptId"].isin(concept_ids)]
+    empty_fr = fr_desc.iloc[0:0]
+    empty_en = en_desc.iloc[0:0]
+    by_concept_fr = {
+        concept_id: df for concept_id, df in fr_desc.groupby("conceptId")
+    }
+    by_concept_en = {
+        concept_id: df for concept_id, df in en_desc.groupby("conceptId")
+    }
 
     rows = [
         _concept_row(
             concept["conceptId"],
             concept.get("fsn", ""),
             concept.get("pten", ""),
-            by_concept.get(concept["conceptId"], empty),
+            by_concept_fr.get(concept["conceptId"], empty_fr),
+            by_concept_en.get(concept["conceptId"], empty_en),
         )
         for _, concept in scope.iterrows()
     ]

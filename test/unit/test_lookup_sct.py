@@ -14,6 +14,7 @@ SYNONYM_TYPE = "900000000000013009"
 PREFERRED = "900000000000548007"
 ACCEPTABLE = "900000000000549004"
 CASE_INSENSITIVE = "900000000000448009"
+US_ENGLISH_REFSET = "900000000000509007"
 
 
 def _desc_row(desc_id, concept_id, term, type_id, case_sig=CASE_INSENSITIVE, active="1"):
@@ -22,6 +23,10 @@ def _desc_row(desc_id, concept_id, term, type_id, case_sig=CASE_INSENSITIVE, act
 
 def _lang_row(desc_id, acceptability, active="1"):
     return f"lang-{desc_id}\t20260621\t{active}\t11000315107\t999\t{desc_id}\t{acceptability}\n"
+
+
+def _en_lang_row(desc_id, acceptability, active="1"):
+    return f"en-{desc_id}\t20260621\t{active}\t900000000000207008\t{US_ENGLISH_REFSET}\t{desc_id}\t{acceptability}\n"
 
 
 @pytest.fixture
@@ -57,6 +62,26 @@ def rf2_snapshot(tmp_path: Path) -> Path:
         / "der2_cRefset_LanguageSnapshot-fr_FR1000315_20260621.txt"
     ).write_text(LANG_HEADER + "".join(lang_rows), encoding="utf-8")
 
+    en_rows = [
+        _desc_row("300", "10", "Kidney structure (body structure)", FSN_TYPE),
+        _desc_row("301", "10", "Kidney structure", SYNONYM_TYPE),
+        _desc_row("302", "10", "Old kidney term", SYNONYM_TYPE),
+    ]
+    (
+        snapshot / "Terminology" / "sct2_Description_Snapshot-en_FR1000315_20260621.txt"
+    ).write_text(DESC_HEADER + "".join(en_rows), encoding="utf-8")
+    en_lang_rows = [
+        _en_lang_row("300", PREFERRED),
+        _en_lang_row("301", PREFERRED),
+        _en_lang_row("302", PREFERRED, active="0"),
+    ]
+    (
+        snapshot
+        / "Refset"
+        / "Language"
+        / "der2_cRefset_LanguageSnapshot-en_FR1000315_20260621.txt"
+    ).write_text(LANG_HEADER + "".join(en_lang_rows), encoding="utf-8")
+
     return snapshot
 
 
@@ -76,7 +101,12 @@ def test_build_lookup_sct(tmp_path: Path, rf2_snapshot: Path):
     assert len(result) == 2
 
     kidney = result.loc[result["SCTID du concept"] == "10"].iloc[0]
-    assert kidney["English FSN (Int. Edition )"] == "Structure of kidney (body structure)"
+    assert kidney["English FSN (Int. Edition )"] == "Kidney structure (body structure)"
+    assert kidney["DESCRIPTION ID du FSN anglais"] == "300"
+    assert kidney["Case significance FSN ang"] == CASE_INSENSITIVE
+    assert kidney["English preferred Term(Int. Edition )"] == "Kidney structure"
+    assert kidney["DESCRIPTION ID du PT anglais"] == "301"
+    assert kidney["Case significance PT ang"] == CASE_INSENSITIVE
     assert kidney["Terme Préféré Français"] == "rein actif"
     assert kidney["DESCRIPTION ID du terme préféré français"] == "104"
     assert kidney["FSN Français"] == ""
