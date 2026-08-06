@@ -20,8 +20,8 @@ def _desc_row(desc_id, concept_id, term, type_id, case_sig=CASE_INSENSITIVE, act
     return f"{desc_id}\t20260621\t{active}\t11000315107\t{concept_id}\tfr\t{type_id}\t{term}\t{case_sig}\n"
 
 
-def _lang_row(desc_id, acceptability):
-    return f"lang-{desc_id}\t20260621\t1\t11000315107\t999\t{desc_id}\t{acceptability}\n"
+def _lang_row(desc_id, acceptability, active="1"):
+    return f"lang-{desc_id}\t20260621\t{active}\t11000315107\t999\t{desc_id}\t{acceptability}\n"
 
 
 @pytest.fixture
@@ -35,6 +35,7 @@ def rf2_snapshot(tmp_path: Path) -> Path:
         _desc_row("101", "10", "rein", SYNONYM_TYPE),
         _desc_row("103", "10", "structure du rein", SYNONYM_TYPE),
         _desc_row("102", "10", "rognon", SYNONYM_TYPE),
+        _desc_row("104", "10", "rein actif", SYNONYM_TYPE),
         _desc_row("200", "20", "inactive term", SYNONYM_TYPE, active="0"),
     ]
     (snapshot / "Terminology" / "sct2_Description_Snapshot-fr_FR1000315_20260621.txt").write_text(
@@ -43,9 +44,10 @@ def rf2_snapshot(tmp_path: Path) -> Path:
 
     lang_rows = [
         _lang_row("100", ACCEPTABLE),
-        _lang_row("101", PREFERRED),
+        _lang_row("101", PREFERRED, active="0"),
         _lang_row("102", ACCEPTABLE),
         _lang_row("103", ACCEPTABLE),
+        _lang_row("104", PREFERRED),
         _lang_row("200", PREFERRED),
     ]
     (
@@ -75,8 +77,8 @@ def test_build_lookup_sct(tmp_path: Path, rf2_snapshot: Path):
 
     kidney = result.loc[result["SCTID du concept"] == "10"].iloc[0]
     assert kidney["English FSN (Int. Edition )"] == "Structure of kidney (body structure)"
-    assert kidney["Terme Préféré Français"] == "rein"
-    assert kidney["DESCRIPTION ID du terme préféré français"] == "101"
+    assert kidney["Terme Préféré Français"] == "rein actif"
+    assert kidney["DESCRIPTION ID du terme préféré français"] == "104"
     assert kidney["FSN Français"] == ""
 
     # Synonymes acceptables triés par Description ID croissant : 100, 102, 103

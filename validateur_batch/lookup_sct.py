@@ -80,10 +80,14 @@ def _read_fr_fsn_and_synonyms(snapshot: str, date: str) -> pd.DataFrame:
         lang_path,
         sep="\t",
         na_filter=False,
-        usecols=["referencedComponentId", "acceptabilityId"],
-        dtype={"referencedComponentId": str},
+        usecols=["active", "referencedComponentId", "acceptabilityId"],
+        dtype={
+            "active": pd.CategoricalDtype(["1", "0"]),
+            "referencedComponentId": str,
+        },
         converters={"acceptabilityId": lambda x: ACCEPT.get(x)},
     )
+    lang = lang.loc[lang["active"] == "1"].drop(columns=["active"])
 
     desc = pd.merge(
         desc, lang, how="left", left_on="id", right_on="referencedComponentId"
