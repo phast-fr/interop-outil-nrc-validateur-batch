@@ -15,7 +15,7 @@ import os.path as op
 
 import pandas as pd
 
-from validateur_batch.io import ACCEPT, CASE
+from validateur_batch.io import ACCEPT
 
 FSN_TYPE = "900000000000003001"
 SYNONYM_TYPE = "900000000000013009"
@@ -71,8 +71,8 @@ def _read_fr_fsn_and_synonyms(snapshot: str, date: str) -> pd.DataFrame:
             "conceptId": str,
             "typeId": str,
             "term": object,
+            "caseSignificanceId": str,
         },
-        converters={"caseSignificanceId": lambda x: CASE.get(x)},
     )
     desc = desc.loc[
         (desc["active"] == "1") & desc["typeId"].isin([FSN_TYPE, SYNONYM_TYPE])

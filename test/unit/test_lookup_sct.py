@@ -109,11 +109,16 @@ def test_build_lookup_sct(tmp_path: Path, rf2_snapshot: Path):
     assert kidney["Case significance PT ang"] == CASE_INSENSITIVE
     assert kidney["Terme Préféré Français"] == "rein actif"
     assert kidney["DESCRIPTION ID du terme préféré français"] == "104"
+    assert kidney["Case significance PT français"] == CASE_INSENSITIVE
     assert kidney["FSN Français"] == ""
 
     # Synonymes acceptables triés par Description ID croissant : 100, 102, 103
     assert kidney["Synonyme Acceptable FR 1"] == "structure entière du rein"
     assert kidney["DESCRIPTION ID du synonyme 1 acceptable français"] == "100"
+    assert (
+        kidney["Case significance SYNONYME ACCEPTABLE 1 français"]
+        == CASE_INSENSITIVE
+    )
     assert kidney["Synonyme Acceptable FR 2"] == "rognon"
     assert kidney["DESCRIPTION ID du synonyme 2 acceptable français"] == "102"
     assert kidney["Synonyme Acceptable FR 3"] == "structure du rein"
