@@ -1,4 +1,5 @@
 from pathlib import Path
+from zipfile import ZIP_DEFLATED, ZipFile
 
 import pandas as pd
 import pytest
@@ -81,6 +82,8 @@ def test_existing_description_becomes_chg_and_ina(
 ) -> None:
     source = tmp_path / "delivery.xlsx"
     _delivery(source, [_rep_row()])
+    with ZipFile(source, "a", compression=ZIP_DEFLATED) as archive:
+        archive.writestr("customXml/preserved.xml", "<preserved />")
 
     prepared = prepare_delivery_inputs(str(source), descriptions, str(tmp_path))
 
@@ -101,6 +104,9 @@ def test_existing_description_becomes_chg_and_ina(
     assert workbook["Description Replacements"]["A2"].value is None
     assert workbook["Description Changes"]["A2"].value == "200"
     assert workbook["Description Inactivations"]["A2"].value == "100"
+    with ZipFile(source) as original, ZipFile(prepared.workbook) as converted:
+        assert converted.namelist() == original.namelist()
+        assert converted.read("customXml/preserved.xml") == b"<preserved />"
 
 
 def test_new_term_stays_in_rep(tmp_path: Path, descriptions: pd.DataFrame) -> None:

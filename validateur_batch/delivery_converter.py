@@ -16,6 +16,7 @@ from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
+from xml.etree import ElementTree
 
 import pandas as pd
 from openpyxl import load_workbook
@@ -196,55 +197,75 @@ def _compact_dataframe(ws: Worksheet, batch_type: str) -> pd.DataFrame:
     return pd.DataFrame(records, columns=COL[batch_type], dtype=str)
 
 
-def _restore_worksheet_extensions(source: Path, target: Path) -> None:
-    """Restaure les extensions OOXML ignorées par openpyxl.
+def _worksheet_paths(archive: zipfile.ZipFile) -> dict[str, str]:
+    """Associe chaque nom d'onglet à son fichier XML dans le classeur."""
+    main_ns = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+    document_rel_ns = (
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+    )
+    package_rel_ns = "http://schemas.openxmlformats.org/package/2006/relationships"
+    workbook = ElementTree.fromstring(archive.read("xl/workbook.xml"))
+    relationships = ElementTree.fromstring(
+        archive.read("xl/_rels/workbook.xml.rels")
+    )
+    targets = {
+        relationship.attrib["Id"]: relationship.attrib["Target"]
+        for relationship in relationships.findall(f"{{{package_rel_ns}}}Relationship")
+    }
+    result = {}
+    for sheet in workbook.findall(f"{{{main_ns}}}sheets/{{{main_ns}}}sheet"):
+        target = targets[sheet.attrib[f"{{{document_rel_ns}}}id"]].replace("\\", "/")
+        if target.startswith("/"):
+            target = target.removeprefix("/")
+        elif not target.startswith("xl/"):
+            target = f"xl/{target}"
+        result[sheet.attrib["name"]] = target
+    return result
 
-    Le template Microsoft contient notamment des validations de données x14.
-    Openpyxl sait conserver la mise en forme des cellules mais supprime ces
-    extensions à la lecture. Elles couvrent des plages fixes du template et
-    peuvent donc être recopiées sans modification après la sauvegarde.
-    """
-    extension_pattern = re.compile(
-        rb"<(?:[A-Za-z0-9_]+:)?extLst\b.*?"
-        rb"</(?:[A-Za-z0-9_]+:)?extLst>",
+
+def _replace_sheet_data(original: bytes, modified: bytes) -> bytes:
+    """Remplace uniquement ``sheetData`` en conservant tout le reste du template."""
+    pattern = re.compile(
+        rb"<(?:[A-Za-z0-9_]+:)?sheetData\b.*?"
+        rb"</(?:[A-Za-z0-9_]+:)?sheetData>",
         re.DOTALL,
     )
-    with zipfile.ZipFile(source) as source_zip:
-        source_extensions = {}
-        for name in source_zip.namelist():
-            if not name.startswith("xl/worksheets/") or not name.endswith(".xml"):
-                continue
-            match = extension_pattern.search(source_zip.read(name))
-            if match:
-                source_extensions[name] = match.group(0)
+    replacement = pattern.search(modified)
+    if replacement is None or pattern.search(original) is None:
+        raise DeliveryConversionError("Structure OOXML sheetData introuvable.")
+    return pattern.sub(replacement.group(0), original, count=1)
 
-        if not source_extensions:
-            return
 
-    with zipfile.ZipFile(target) as target_zip:
-        target_content = [
-            (item, target_zip.read(item.filename))
-            for item in target_zip.infolist()
-        ]
-
-    with tempfile.NamedTemporaryFile(
-        dir=target.parent, suffix=".xlsx", delete=False
-    ) as temporary_file:
-        temporary_path = Path(temporary_file.name)
-
-    try:
-        with zipfile.ZipFile(temporary_path, "w") as rebuilt:
-            for item, content in target_content:
-                extension = source_extensions.get(item.filename)
-                if extension:
-                    content = extension_pattern.sub(b"", content)
-                    content = content.replace(
-                        b"</worksheet>", extension + b"</worksheet>"
-                    )
-                rebuilt.writestr(item, content)
-        temporary_path.replace(target)
-    finally:
-        temporary_path.unlink(missing_ok=True)
+def _save_preserving_template(
+    source: Path,
+    modified: Path,
+    target: Path,
+    modified_sheets: Iterable[str],
+) -> None:
+    """Crée le livrable depuis l'archive originale sans dégrader le template."""
+    with zipfile.ZipFile(source) as source_zip, zipfile.ZipFile(modified) as modified_zip:
+        source_paths = _worksheet_paths(source_zip)
+        modified_paths = _worksheet_paths(modified_zip)
+        replacements = {
+            source_paths[name]: modified_zip.read(modified_paths[name])
+            for name in modified_sheets
+        }
+        with tempfile.NamedTemporaryFile(
+            dir=target.parent, suffix=".xlsx", delete=False
+        ) as temporary_file:
+            temporary_path = Path(temporary_file.name)
+        try:
+            with zipfile.ZipFile(temporary_path, "w") as rebuilt:
+                for item in source_zip.infolist():
+                    content = source_zip.read(item.filename)
+                    if item.filename in replacements:
+                        content = _replace_sheet_data(
+                            content, replacements[item.filename]
+                        )
+                    rebuilt.writestr(item, content)
+            temporary_path.replace(target)
+        finally:
+            temporary_path.unlink(missing_ok=True)
 
 
 def prepare_delivery_inputs(
@@ -451,8 +472,20 @@ def prepare_delivery_inputs(
     _write_business_rows(sheets["REP"], kept_rep)
 
     workbook_path = destination / f"{source.stem}_reconditionne.xlsx"
-    workbook.save(workbook_path)
-    _restore_worksheet_extensions(source, workbook_path)
+    with tempfile.NamedTemporaryFile(
+        dir=destination, suffix=".xlsx", delete=False
+    ) as modified_file:
+        modified_path = Path(modified_file.name)
+    try:
+        workbook.save(modified_path)
+        _save_preserving_template(
+            source,
+            modified_path,
+            workbook_path,
+            (SHEET_BY_TYPE["CHG"], SHEET_BY_TYPE["INA"], SHEET_BY_TYPE["REP"]),
+        )
+    finally:
+        modified_path.unlink(missing_ok=True)
 
     batch_files: dict[str, str] = {}
     for kind, sheet in sheets.items():
