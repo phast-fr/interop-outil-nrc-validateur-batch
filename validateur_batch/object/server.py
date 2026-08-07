@@ -44,11 +44,9 @@ class Server:
         self._cache_dir.mkdir(parents=True, exist_ok=True)
 
         if versioning:
-            self.ecl_base_url = f"{endpoint}/ValueSet/$expand?url=http://snomed.info/sct/900000000000207008?fhir_vs=ecl/"  # noqa
             self.lookup_base_url = f"{endpoint}/CodeSystem/$lookup?system=http://snomed.info/sct&version=http://snomed.info/sct/900000000000207008"  # noqa
 
         else:
-            self.ecl_base_url = f"{endpoint}/ValueSet/$expand?url=http://snomed.info/sct?fhir_vs=ecl/"  # noqa
             self.lookup_base_url = (
                 f"{endpoint}/CodeSystem/$lookup?system=http://snomed.info/sct"  # noqa
             )
@@ -64,11 +62,25 @@ class Server:
         if self._available_versions is not None:
             return self._available_versions
 
+        auth = (self.login, self.password) if self.login and self.password else None
+
         url = f"{self.endpoint}/metadata?mode=terminology"
-        response = self.session.request("GET", url, auth=(self.login, self.password) if self.login and self.password else None)
+        response = self.session.request("GET", url, auth=auth)
         response.raise_for_status()
 
-        self._available_versions = list(jsonpath.findall('$codeSystem[?(@.uri=="http://snomed.info/sct")].version[*].code', response.json())) # noqa
+        versions = list(jsonpath.findall('$codeSystem[?(@.uri=="http://snomed.info/sct")].version[*].code', response.json())) # noqa
+
+        if not versions:
+            # Repli : certains serveurs (ex. Snowstorm) n'implémentent pas
+            # TerminologyCapabilities et ignorent `mode=terminology`, on
+            # récupère alors les versions via une recherche de CodeSystem.
+            logger.info("Aucune version trouvée via /metadata?mode=terminology, repli sur une recherche CodeSystem.")
+            url = f"{self.endpoint}/CodeSystem"
+            response = self.session.request("GET", url, params={"url": "http://snomed.info/sct"}, auth=auth)
+            response.raise_for_status()
+            versions = sorted(jsonpath.findall('$entry[*].resource.version', response.json())) # noqa
+
+        self._available_versions = versions
 
         return self._available_versions
 
@@ -105,17 +117,41 @@ class Server:
                 logger.info(f"Version du cache ({cached.get('version_uri')}) différente de la version actuelle du serveur FTS ({current_version}). Requête ECL envoyée au serveur.")
 
         url = f"{self.endpoint}/ValueSet/$expand"
-        params = {
-            "offset": 0,
-            "url": f"http://snomed.info/sct/900000000000207008?fhir_vs=ecl/{ecl}",  # noqa
-        }
+        offset = 0
         codes = []
         version_uri = None
         while True:
+            body = {
+                "resourceType": "Parameters",
+                "parameter": [
+                    {
+                        "name": "valueSet",
+                        "resource": {
+                            "resourceType": "ValueSet",
+                            "compose": {
+                                "include": [
+                                    {
+                                        "system": "http://snomed.info/sct",
+                                        "filter": [
+                                            {"property": "constraint", "op": "=", "value": ecl}
+                                        ],
+                                    }
+                                ]
+                            },
+                        },
+                    },
+                    {"name": "offset", "valueInteger": offset},
+                ],
+            }
+            # La recherche ECL passe en POST (plutôt qu'un $expand?url=...fhir_vs=ecl/...
+            # en GET) car certains serveurs FTS (ex. Ontoserver) interprètent mal le "|"
+            # délimitant les libellés de termes dans les expressions ECL une fois inséré
+            # dans une URL, même correctement encodé.
             response = self.session.request(
-                "GET",
+                "POST",
                 url,
-                params=params,
+                json=body,
+                headers={"Content-Type": "application/fhir+json"},
                 auth=(self.login, self.password)
                 if self.login and self.password
                 else None,
@@ -129,14 +165,22 @@ class Server:
                 "$.expansion.contains[*].code",
                 response.text,
             )
-            raw_version_uri = jsonpath.match(
-                "$.expansion.parameter[?@name == 'version'].valueString",
+            version_param_match = jsonpath.match(
+                "$.expansion.parameter[?@name == 'version']",
                 response.text,
-            ).obj
+            )
+            version_param = version_param_match.obj if version_param_match else None
+            # value[x] est polymorphe en FHIR : selon le serveur, le paramètre
+            # "version" est porté par valueUri, valueString ou valueCode.
+            raw_version_uri = (
+                version_param.get("valueUri")
+                or version_param.get("valueString")
+                or version_param.get("valueCode")
+            ) if version_param else None
             version_uri = raw_version_uri.split("|")[-1] if raw_version_uri else None
             codes.extend(page_codes)
             if len(codes) < total:
-                params["offset"] = len(codes)
+                offset = len(codes)
             else:
                 break
 
