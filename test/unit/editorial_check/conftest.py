@@ -46,6 +46,46 @@ def case_output() -> pd.DataFrame:
     return pd.DataFrame({"caseSignificanceId": ["cI"]}, index=[1])
 
 
+class FakeSpellDict:
+    """Dictionnaire orthographique factice pour tester `_check_spellcheck`
+    indépendamment du dictionnaire enchant/hunspell réellement installé."""
+
+    def __init__(self, known_words):
+        self.known_words = known_words
+
+    def check(self, word: str) -> bool:
+        return word.lower() in self.known_words
+
+
+@pytest.fixture
+def fake_spell_dict() -> FakeSpellDict:
+    return FakeSpellDict({
+        "structure", "de", "articulation", "du", "genou", "bonjour", "le",
+        "monde",
+    })
+
+
+@pytest.fixture
+def spell() -> pd.DataFrame:
+    return pd.DataFrame(
+        {"term": ["structure de l'articulation du genou",
+                  "structure de l'articulasion du genou",
+                  "bonjour le monde",
+                  "xyzzyfoobar inconnu"]}
+    )
+
+
+@pytest.fixture
+def spell_output(spell) -> pd.DataFrame:
+    spellcheck = pd.Series(
+        [float("nan"), "1", float("nan"), "1"], name="spellcheck")
+    mots = pd.Series(
+        [float("nan"), "articulasion", float("nan"), "xyzzyfoobar | inconnu"],
+        name="spellcheck-mots")
+
+    return pd.concat([spell, spellcheck, mots], axis=1)
+
+
 @pytest.fixture
 def ar() -> pd.DataFrame:
     return pd.DataFrame(

@@ -8,6 +8,9 @@ Ce projet a pour objectif de valider le format d'un ensemble de fichiers détail
 - Accès au dernier RF2 de l'édition nationale (dernière version publiée)
 - Recommandé : accès au dernier RF2 de l'édition internationale
 - Recommandé : fichier de définition du périmètre de travail
+- Pour le contrôle orthographique des termes : paquets système `libenchant-2-2` et `hunspell-fr`
+  (ex. `sudo apt-get install libenchant-2-2 hunspell-fr` sous Debian/Ubuntu). En leur absence,
+  ce contrôle est simplement désactivé, le reste des règles éditoriales continuant de s'exécuter.
 
 ## Installation du projet
 ```shell

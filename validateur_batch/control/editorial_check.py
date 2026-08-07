@@ -1,4 +1,8 @@
-from typing import List
+from typing import List, Optional
+
+import atexit
+import os
+import tempfile
 
 import regex
 import re
@@ -106,6 +110,120 @@ def _check_chars(df: pd.DataFrame) -> pd.DataFrame:
     if mask_unauthorized.any():
         df["char"]="0"
         df.loc[mask_unauthorized, "char"]="1"
+
+    return df
+
+
+# Fragments d'élision (d', l', qu'...) qui ne sont jamais des mots valides
+# à eux seuls et ne doivent donc pas être soumis au correcteur orthographique.
+_ELISION_FRAGMENTS = {
+    "c", "d", "j", "l", "m", "n", "s", "t", "qu",
+    "jusqu", "lorsqu", "puisqu", "quoiqu", "presqu",
+}
+
+
+def _build_spellcheck_dict(
+    desc_act_fr: pd.DataFrame, terminology_anatomica: pd.DataFrame
+) -> Optional["enchant.Dict"]:  # noqa: F821
+    """Construit un dictionnaire orthographique français enrichi du vocabulaire
+    médical déjà validé, afin de limiter les faux positifs sur les termes
+    anatomiques/médicaux absents d'un dictionnaire français générique.
+
+    args:
+        desc_act_fr: descriptions actives de l'édition nationale fr
+        terminology_anatomica: DataFrame contenant la terminologie anatomique
+
+    returns:
+        Dictionnaire enchant fr_FR enrichi, ou None si pyenchant ou le
+        dictionnaire fr_FR ne sont pas disponibles sur la machine.
+    """
+    try:
+        import enchant
+    except ImportError:
+        print("pyenchant n'est pas installé : contrôle orthographique désactivé")
+        return None
+
+    words = set()
+    for series in (
+        desc_act_fr.get("term"),
+        terminology_anatomica.get("Ancienne nomenclature"),
+        terminology_anatomica.get("Nouvelle nomenclature"),
+    ):
+        if series is None:
+            continue
+        for term in series.dropna():
+            words.update(w for w in regex.findall(r"\p{L}+", term) if len(w) > 1)
+
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".txt", delete=False, encoding="utf-8"
+        ) as pwl_file:
+            pwl_file.write("\n".join(sorted(words)))
+            pwl_path = pwl_file.name
+
+        spell_dict = enchant.DictWithPWL("fr_FR", pwl_path)
+        # Le fichier n'est nécessaire qu'à la construction du dictionnaire ;
+        # il est supprimé à la fin du programme plutôt qu'ici pour éviter
+        # tout accès tardif par le backend enchant.
+        atexit.register(lambda: os.path.exists(pwl_path) and os.remove(pwl_path))
+        return spell_dict
+    except enchant.errors.Error:
+        print("Dictionnaire fr_FR introuvable (paquet hunspell-fr manquant) : "
+              "contrôle orthographique désactivé")
+        return None
+
+
+def _misspelled_words(term: str, spell_dict: "enchant.Dict") -> List[str]:  # noqa: F821
+    """Retourne les mots du terme absents du dictionnaire orthographique.
+
+    args:
+        term: terme à vérifier
+        spell_dict: dictionnaire orthographique enchant
+
+    returns:
+        Liste des mots non reconnus par le dictionnaire.
+    """
+    if not isinstance(term, str):
+        return []
+
+    misspelled = []
+    for word in regex.findall(r"\p{L}+", term):
+        if len(word) <= 1 or word.lower() in _ELISION_FRAGMENTS:
+            continue
+        if spell_dict.check(word) or spell_dict.check(word.lower()):
+            continue
+        misspelled.append(word)
+
+    return misspelled
+
+
+def _check_spellcheck(df: pd.DataFrame, spell_dict: Optional["enchant.Dict"]) -> pd.DataFrame:  # noqa: F821, E501
+    """Identifie les descriptions contenant des mots absents du dictionnaire
+    orthographique français (enrichi du vocabulaire médical déjà validé).
+
+    args:
+        df: DataFrame à valider
+        spell_dict: dictionnaire orthographique enchant, ou None si le
+            contrôle orthographique n'est pas disponible
+
+    returns:
+        DataFrame du fichier avec des colonnes identifiant les
+        descriptions contenant des mots absents du dictionnaire.
+    """
+    if spell_dict is None:
+        return df
+
+    words_by_row = df["term"].apply(_misspelled_words, spell_dict=spell_dict)
+    mask_error = words_by_row.apply(bool)
+
+    if mask_error.any():
+        idx = mask_error[mask_error].index
+        df = pd.merge(df, pd.DataFrame(
+            data={
+                "spellcheck": ["1"] * len(idx),
+                "spellcheck-mots": words_by_row.loc[idx].apply(" | ".join),
+            }, index=idx),
+                      how="left", left_index=True, right_index=True, validate="1:1")
 
     return df
 
@@ -1597,7 +1715,11 @@ def run_editorial_check(
 
     # Contrôle des caractères innatendus
     df = _check_chars(df)
-    
+
+    # Contrôle orthographique
+    spell_dict = _build_spellcheck_dict(desc_act_fr, terminology_anatomica)
+    df = _check_spellcheck(df, spell_dict)
+
     # Correction des casses
     # correction = _get_correct_case(df.loc[df.loc[:, "caseSignificanceId"] == "CS"])
     # df.update(correction)
