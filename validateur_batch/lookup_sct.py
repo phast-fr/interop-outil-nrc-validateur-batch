@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import os.path as op
 
 import pandas as pd
@@ -149,19 +150,86 @@ def _read_en_fsn_and_pt(snapshot: str, date: str) -> pd.DataFrame:
     return desc
 
 
+def _read_international_en_fsn_and_pt(international_root: str) -> pd.DataFrame:
+    """Lit les FSN et PT US anglais actifs du RF2 international autonome.
+
+    Sert de repli pour les concepts trop récents pour figurer encore dans le
+    fichier anglais inclus dans le paquet RF2 français (``--snapshot``).
+    """
+    root = international_root
+    with open(op.join(root, "release_package_information.json"), encoding="utf-8") as f:
+        version = json.load(f)["effectiveTime"]
+
+    desc_path = op.join(
+        root, f"Snapshot/Terminology/sct2_Description_Snapshot-en_INT_{version}.txt"
+    )
+    lang_path = op.join(
+        root,
+        f"Snapshot/Refset/Language/der2_cRefset_LanguageSnapshot-en_INT_{version}.txt",
+    )
+    desc = pd.read_csv(
+        desc_path,
+        sep="\t",
+        quoting=3,
+        na_filter=False,
+        usecols=["id", "active", "conceptId", "typeId", "term", "caseSignificanceId"],
+        dtype={
+            "id": str,
+            "active": pd.CategoricalDtype(["1", "0"]),
+            "conceptId": str,
+            "typeId": str,
+            "term": object,
+        },
+    )
+    desc = desc.loc[
+        (desc["active"] == "1") & desc["typeId"].isin([FSN_TYPE, SYNONYM_TYPE])
+    ].copy()
+
+    lang = pd.read_csv(
+        lang_path,
+        sep="\t",
+        na_filter=False,
+        usecols=["active", "refsetId", "referencedComponentId", "acceptabilityId"],
+        dtype={
+            "active": pd.CategoricalDtype(["1", "0"]),
+            "refsetId": str,
+            "referencedComponentId": str,
+            "acceptabilityId": str,
+        },
+    )
+    preferred_ids = set(
+        lang.loc[
+            (lang["active"] == "1")
+            & (lang["refsetId"] == US_ENGLISH_REFSET)
+            & (lang["acceptabilityId"] == PREFERRED),
+            "referencedComponentId",
+        ]
+    )
+    desc["isPreferredUS"] = desc["id"].isin(preferred_ids)
+    return desc
+
+
 def _concept_row(
     concept_id: str,
     scope_fsn_en: str,
     scope_pten_en: str,
     concept_desc: pd.DataFrame,
     concept_desc_en: pd.DataFrame,
+    concept_desc_intl: pd.DataFrame,
 ) -> list:
     """Construit une ligne LOOKUP_SCT pour un concept à partir de ses descriptions FR."""
     fsn_en = concept_desc_en.loc[concept_desc_en["typeId"] == FSN_TYPE]
+    if fsn_en.empty:
+        fsn_en = concept_desc_intl.loc[concept_desc_intl["typeId"] == FSN_TYPE]
     pt_en = concept_desc_en.loc[
         (concept_desc_en["typeId"] == SYNONYM_TYPE)
         & concept_desc_en["isPreferredUS"]
     ]
+    if pt_en.empty:
+        pt_en = concept_desc_intl.loc[
+            (concept_desc_intl["typeId"] == SYNONYM_TYPE)
+            & concept_desc_intl["isPreferredUS"]
+        ]
     fsn_fr = concept_desc.loc[concept_desc["typeId"] == FSN_TYPE]
     pt_fr = concept_desc.loc[
         (concept_desc["typeId"] == SYNONYM_TYPE)
@@ -207,9 +275,18 @@ def _concept_row(
 
 
 def build_lookup_sct(
-    scope_concepts_csv: str, snapshot: str, date: str, output_csv: str
+    scope_concepts_csv: str,
+    snapshot: str,
+    date: str,
+    output_csv: str,
+    international: str | None = None,
 ) -> None:
-    """Génère le CSV LOOKUP_SCT à partir d'un scope_concepts.csv et du RF2 FR."""
+    """Génère le CSV LOOKUP_SCT à partir d'un scope_concepts.csv et du RF2 FR.
+
+    Si ``international`` est fourni (chemin racine du RF2 international
+    autonome), il sert de repli pour le FSN/PT anglais des concepts trop
+    récents pour figurer encore dans le RF2 français.
+    """
     scope = pd.read_csv(scope_concepts_csv, sep=";", dtype=str).drop_duplicates(
         subset="conceptId"
     )
@@ -228,6 +305,16 @@ def build_lookup_sct(
         concept_id: df for concept_id, df in en_desc.groupby("conceptId")
     }
 
+    if international:
+        intl_desc = _read_international_en_fsn_and_pt(international)
+        intl_desc = intl_desc.loc[intl_desc["conceptId"].isin(concept_ids)]
+    else:
+        intl_desc = en_desc.iloc[0:0]
+    empty_intl = intl_desc.iloc[0:0]
+    by_concept_intl = {
+        concept_id: df for concept_id, df in intl_desc.groupby("conceptId")
+    }
+
     rows = [
         _concept_row(
             concept["conceptId"],
@@ -235,6 +322,7 @@ def build_lookup_sct(
             concept.get("pten", ""),
             by_concept_fr.get(concept["conceptId"], empty_fr),
             by_concept_en.get(concept["conceptId"], empty_en),
+            by_concept_intl.get(concept["conceptId"], empty_intl),
         )
         for _, concept in scope.iterrows()
     ]
@@ -256,7 +344,20 @@ if __name__ == "__main__":
     cli.add_argument("snapshot", help="Chemin vers le dossier Snapshot du RF2 français")
     cli.add_argument("date", help="Date de la release RF2 française (YYYYMMDD)")
     cli.add_argument("output", help="Chemin du CSV LOOKUP_SCT à générer")
+    cli.add_argument(
+        "--international",
+        help=(
+            "Chemin racine du RF2 international autonome, utilisé en repli pour "
+            "le FSN/PT anglais des concepts trop récents pour le RF2 français"
+        ),
+    )
     args = cli.parse_args()
 
-    build_lookup_sct(args.scope_concepts, args.snapshot, args.date, args.output)
+    build_lookup_sct(
+        args.scope_concepts,
+        args.snapshot,
+        args.date,
+        args.output,
+        international=args.international,
+    )
     print(f"LOOKUP_SCT généré : {args.output}")

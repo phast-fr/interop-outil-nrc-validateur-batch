@@ -128,3 +128,88 @@ def test_build_lookup_sct(tmp_path: Path, rf2_snapshot: Path):
     # Concept 20 n'a que des descriptions inactives : tout reste vide côté français.
     inactive = result.loc[result["SCTID du concept"] == "20"].iloc[0]
     assert inactive["Terme Préféré Français"] == ""
+
+
+@pytest.fixture
+def international_rf2(tmp_path: Path) -> Path:
+    """RF2 international autonome, avec un concept absent du RF2 français."""
+    root = tmp_path / "International"
+    (root / "Snapshot" / "Terminology").mkdir(parents=True)
+    (root / "Snapshot" / "Refset" / "Language").mkdir(parents=True)
+
+    (root / "release_package_information.json").write_text(
+        '{"effectiveTime": "20260801"}', encoding="utf-8"
+    )
+
+    en_rows = [
+        _desc_row("900", "30", "Renal tubular epithelium (body structure)", FSN_TYPE),
+        _desc_row("901", "30", "Renal tubular epithelium", SYNONYM_TYPE),
+    ]
+    (
+        root / "Snapshot" / "Terminology" / "sct2_Description_Snapshot-en_INT_20260801.txt"
+    ).write_text(DESC_HEADER + "".join(en_rows), encoding="utf-8")
+
+    en_lang_rows = [
+        _en_lang_row("900", PREFERRED),
+        _en_lang_row("901", PREFERRED),
+    ]
+    (
+        root
+        / "Snapshot"
+        / "Refset"
+        / "Language"
+        / "der2_cRefset_LanguageSnapshot-en_INT_20260801.txt"
+    ).write_text(LANG_HEADER + "".join(en_lang_rows), encoding="utf-8")
+
+    return root
+
+
+def test_build_lookup_sct_falls_back_to_international_rf2(
+    tmp_path: Path, rf2_snapshot: Path, international_rf2: Path
+):
+    """Concept trop récent pour le RF2 FR : repli sur le RF2 international."""
+    scope_csv = tmp_path / "scope_concepts.csv"
+    scope_csv.write_text(
+        "section;conceptId;fsn;pten\n"
+        "kidney;30;Structure of renal tubular epithelium (body structure);Renal tubular epithelium\n",
+        encoding="utf-8",
+    )
+
+    output_csv = tmp_path / "lookup_sct.csv"
+    build_lookup_sct(
+        str(scope_csv),
+        str(rf2_snapshot),
+        "20260621",
+        str(output_csv),
+        international=str(international_rf2),
+    )
+
+    result = pd.read_csv(output_csv, sep=";", dtype=str, na_filter=False)
+    concept = result.loc[result["SCTID du concept"] == "30"].iloc[0]
+    assert concept["English FSN (Int. Edition )"] == "Renal tubular epithelium (body structure)"
+    assert concept["DESCRIPTION ID du FSN anglais"] == "900"
+    assert concept["English preferred Term(Int. Edition )"] == "Renal tubular epithelium"
+    assert concept["DESCRIPTION ID du PT anglais"] == "901"
+    # Toujours pas de traduction française : le concept n'existe pas encore
+    # dans le RF2 français, donc aucune traduction ne peut exister.
+    assert concept["Terme Préféré Français"] == ""
+
+
+def test_build_lookup_sct_without_international_leaves_columns_empty(
+    tmp_path: Path, rf2_snapshot: Path
+):
+    """Sans --international, un concept trop récent reste sans Description ID."""
+    scope_csv = tmp_path / "scope_concepts.csv"
+    scope_csv.write_text(
+        "section;conceptId;fsn;pten\n"
+        "kidney;30;Structure of renal tubular epithelium (body structure);Renal tubular epithelium\n",
+        encoding="utf-8",
+    )
+
+    output_csv = tmp_path / "lookup_sct.csv"
+    build_lookup_sct(str(scope_csv), str(rf2_snapshot), "20260621", str(output_csv))
+
+    result = pd.read_csv(output_csv, sep=";", dtype=str, na_filter=False)
+    concept = result.loc[result["SCTID du concept"] == "30"].iloc[0]
+    assert concept["English FSN (Int. Edition )"] == "Structure of renal tubular epithelium (body structure)"
+    assert concept["DESCRIPTION ID du FSN anglais"] == ""

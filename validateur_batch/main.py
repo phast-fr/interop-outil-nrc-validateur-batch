@@ -137,7 +137,11 @@ if __name__ == "__main__":
         if args.build_lookup_sct:
             print("\n## Construction de l'onglet LOOKUP_SCT ##")
             build_lookup_sct(
-                scope_concepts_path, args.snapshot, args.date, args.build_lookup_sct
+                scope_concepts_path,
+                args.snapshot,
+                args.date,
+                args.build_lookup_sct,
+                international=args.international,
             )
             print(f"LOOKUP_SCT généré : {args.build_lookup_sct}")
     else:
