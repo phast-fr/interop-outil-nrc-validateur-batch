@@ -413,7 +413,7 @@ def prepare_delivery_inputs(
             if old_id not in ina_ids:
                 ina_values = {
                     "Description ID Or Term": old_id,
-                    "Language Code (require if the term is specified)": "",
+                    "Language Code (require if the term is specified)": "fr",
                     "Concept ID (Optional)": concept_id,
                     "Preferred Term (For reference only)": data.get(
                         "Preferred Term (For reference only)", ""

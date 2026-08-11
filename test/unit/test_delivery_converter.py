@@ -99,6 +99,7 @@ def test_existing_description_becomes_chg_and_ina(
     assert chg.loc[0, "Case significance"] == "cI"
     assert chg.loc[0, "Acceptability"] == "PREFERRED"
     assert ina.loc[0, "Description ID Or Term"] == "100"
+    assert ina.loc[0, "Language Code (require if the term is specified)"] == "fr"
 
     workbook = load_workbook(prepared.workbook, read_only=True)
     assert workbook["Description Replacements"]["A2"].value is None
