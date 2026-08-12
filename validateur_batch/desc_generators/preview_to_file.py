@@ -22,11 +22,13 @@ def write_add_file(add_file_path: Path, new_descriptions: pd.DataFrame):
             "Case significance": new_descriptions["caseSignificanceId"],
             "Type": "SYNONYM",
             "Language reference set" : "French",
-            "Acceptability":  new_descriptions["acceptabilityId"]
+            "Acceptability":  new_descriptions["acceptabilityId"],
+            "Notes": ""
         }
     )
 
     df.to_csv(add_file_path, index=False, sep=";", quoting=csv.QUOTE_NONE, encoding='utf-8')
+    df.to_excel(Path(add_file_path).with_suffix(".xlsx"), index=False)
 
 
 def write_val_file(val_file_path: Path, preview: pd.DataFrame):
