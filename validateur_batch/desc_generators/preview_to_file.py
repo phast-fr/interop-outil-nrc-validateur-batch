@@ -44,6 +44,7 @@ def write_val_file(val_file_path: Path, preview: pd.DataFrame):
         {
             "Concept ID": preview.loc[mask, "conceptId"],
             "FSN": preview.loc[mask, "FSN"],
+            "Notes": "",
         }
     )
     # `preview` a une ligne par description existante : un concept ayant
