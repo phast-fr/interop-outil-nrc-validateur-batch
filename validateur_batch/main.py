@@ -58,6 +58,17 @@ if __name__ == "__main__":
                      help="Chemin vers répertoire de cache", default="./cache")
     cli.add_argument("--versioning", action="store_true",
                      help="Activer la gestion des versions SNOMED CT sur le FTS")
+    cli.add_argument(
+        "--sct_version",
+        type=str,
+        help=(
+            "URI de version SNOMED CT à figer pour les requêtes ECL et lookup "
+            "sur le FTS (ex: http://snomed.info/sct/900000000000207008/version/20260801). "
+            "Utile quand le serveur résout par défaut les requêtes non versionnées "
+            "sur une édition en retard sur l'édition internationale (ex: SMT). "
+            "Par défaut, la dernière version jugée disponible par le serveur est utilisée."
+        ),
+    )
     cli.add_argument("--scope", type=str,
         help="Fichier JSON définissant les concepts constituant le périmètre d'analyse "
         + "(si vide, les concepts présents dans les fichiers csv de transformation "
@@ -81,7 +92,7 @@ if __name__ == "__main__":
 
     # Initialisation de la classe de gestion du FTS
     international = SctEd(args.international, args.cache) if args.international else None
-    fts = server.Server(args.endpoint, args.login, args.pwd, versioning=args.versioning, international=international)
+    fts = server.Server(args.endpoint, args.login, args.pwd, versioning=args.versioning, international=international, sct_version=args.sct_version)
 
     # Le RF2 français est aussi la source de vérité pour vérifier les Description ID
     # lors du reconditionnement d'une livraison.

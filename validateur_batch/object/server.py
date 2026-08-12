@@ -28,11 +28,19 @@ class Server:
         versioning: bool = True,
         international: SctEd = None,
         cache_dir: str = "cache",
+        sct_version: str = None,
     ):
         """
         Args:
             endpoint: Endpoint de votre serveur de Terminologies FHIR
             cache_file: Fichier de cache pour les données récupérées du FTS (si vide, le FTS est utilisé pour chaque requête)
+            sct_version: URI de version SNOMED CT à figer pour les requêtes ECL et
+                lookup (ex: ``http://snomed.info/sct/900000000000207008/version/20260801``).
+                Certains serveurs résolvent par défaut les requêtes non versionnées
+                sur une édition nationale qui peut être en retard sur l'édition
+                internationale (ex: SMT) ; figer la version permet de cibler
+                explicitement l'édition voulue. Si non fourni, la dernière version
+                jugée disponible par le serveur est utilisée.
         """
         self.endpoint = endpoint
         self.login = login
@@ -42,16 +50,21 @@ class Server:
         self._available_versions: List[str] | None = None
         self._cache_dir = Path(cache_dir)
         self._cache_dir.mkdir(parents=True, exist_ok=True)
+        self._sct_version = sct_version
 
-        if versioning:
+        if sct_version:
+            self.lookup_base_url = f"{endpoint}/CodeSystem/$lookup?system=http://snomed.info/sct&version={sct_version}"  # noqa
+        elif versioning:
             self.lookup_base_url = f"{endpoint}/CodeSystem/$lookup?system=http://snomed.info/sct&version=http://snomed.info/sct/900000000000207008"  # noqa
-
         else:
             self.lookup_base_url = (
                 f"{endpoint}/CodeSystem/$lookup?system=http://snomed.info/sct"  # noqa
             )
 
-        logger.info(f"Version SNOMED CT utilisée sur le serveur FTS : {self.last_available_version()}")
+        if sct_version:
+            logger.info(f"Version SNOMED CT figée pour les requêtes FTS : {sct_version}")
+        else:
+            logger.info(f"Version SNOMED CT utilisée sur le serveur FTS : {self.last_available_version()}")
 
     def available_versions(self) -> List[str]:
         """Renvoie la liste des versions disponibles sur le serveur FTS
@@ -112,7 +125,7 @@ class Server:
         """
         cache_key = hashlib.sha256(ecl.encode()).hexdigest()
         cache_file = self._cache_dir / f"{cache_key}.json"
-        current_version = self.last_available_version()
+        current_version = self._sct_version or self.last_available_version()
 
         if cache_file.exists():
             cached = json.loads(cache_file.read_text())
@@ -127,6 +140,18 @@ class Server:
         codes = []
         version_uri = None
         while True:
+            include = {
+                "system": "http://snomed.info/sct",
+                "filter": [
+                    {"property": "constraint", "op": "=", "value": ecl}
+                ],
+            }
+            if self._sct_version:
+                # Figer la version cible explicitement : certains serveurs
+                # (ex. SMT) résolvent sinon une requête ECL non versionnée sur
+                # leur édition nationale par défaut, qui peut être en retard
+                # sur l'édition internationale.
+                include["version"] = self._sct_version
             body = {
                 "resourceType": "Parameters",
                 "parameter": [
@@ -134,16 +159,7 @@ class Server:
                         "name": "valueSet",
                         "resource": {
                             "resourceType": "ValueSet",
-                            "compose": {
-                                "include": [
-                                    {
-                                        "system": "http://snomed.info/sct",
-                                        "filter": [
-                                            {"property": "constraint", "op": "=", "value": ecl}
-                                        ],
-                                    }
-                                ]
-                            },
+                            "compose": {"include": [include]},
                         },
                     },
                     {"name": "offset", "valueInteger": offset},

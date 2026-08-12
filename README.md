@@ -37,6 +37,7 @@ Le projet nécessite plusieurs données en entrée :
 - [*OPTIONNEL*] `--pwd` : Mot de passe pour accéder au FTS
 - [*OPTIONNEL*] `--international` : Chemin vers les RF2 de l'édition internationale (alternative à la récupération via le FTS)
 - [*OPTIONNEL*] `--cache` : Chemin vers le répertoire de cache (défaut : `./cache`)
+- [*OPTIONNEL*] `--sct_version` : URI de version SNOMED CT à figer pour les requêtes ECL et lookup sur le FTS (ex : `http://snomed.info/sct/900000000000207008/version/20260801`). Utile quand le serveur résout par défaut les requêtes non versionnées sur une édition en retard sur l'édition internationale (ex : SMT résout par défaut sur son édition française, qui peut ne pas encore contenir les concepts internationaux les plus récents). Sans cet argument, la dernière version jugée disponible par le serveur est utilisée.
 - [*OPTIONNEL*] `--scope` : Chemin vers le fichier JSON définissant le périmètre d'analyse
 - [*OPTIONNEL*] `--generate_auto_desc` : Active la génération automatique de descriptions supplémentaires à partir des règles éditoriales (ex : bs3)
 
