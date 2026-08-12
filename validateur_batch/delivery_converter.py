@@ -99,8 +99,14 @@ def _rows(ws: Worksheet, key_header: str) -> list[dict[str, object]]:
 
     result = []
     for excel_row in range(2, ws.max_row + 1):
-        values = [ws.cell(excel_row, col + 1).value for col in range(len(headers))]
-        if not _text(values[key_index]):
+        # Normalisées en texte dès la lecture : Excel stocke parfois un
+        # Description ID / Concept ID en nombre, et le réinjecter tel quel
+        # dans le classeur reconditionné le fait afficher en notation
+        # scientifique ou perdre des chiffres (précision d'un float64).
+        values = [
+            _text(ws.cell(excel_row, col + 1).value) for col in range(len(headers))
+        ]
+        if not values[key_index]:
             continue
         result.append(
             {

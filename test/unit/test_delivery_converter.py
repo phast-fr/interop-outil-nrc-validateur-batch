@@ -123,6 +123,39 @@ def test_new_term_stays_in_rep(tmp_path: Path, descriptions: pd.DataFrame) -> No
     assert "INA" not in prepared.batch_files
 
 
+def test_numeric_ids_are_preserved_as_text(
+    tmp_path: Path, descriptions: pd.DataFrame
+) -> None:
+    """Un Concept ID/Description ID stocké en nombre par Excel (cellule non
+    formatée en Texte) ne doit pas être réinjecté tel quel : ça l'affiche en
+    notation scientifique et fait diverger son type de celui des CSV."""
+    source = tmp_path / "delivery.xlsx"
+    workbook = Workbook()
+    workbook.remove(workbook.active)
+    for batch_type, sheet_name in SHEETS.items():
+        sheet = workbook.create_sheet(sheet_name)
+        sheet.append(COL[batch_type] + (["Notes"] if batch_type != "ADD" else []))
+    rep_sheet = workbook["Description Replacements"]
+    numeric_row = _rep_row(new_id="", new_term="nouveau PT")
+    concept_index = COL["REP"].index("Concept ID")
+    description_index = COL["REP"].index("Description ID")
+    numeric_row[concept_index] = 123456789
+    numeric_row[description_index] = 6557466016
+    rep_sheet.append(numeric_row)
+    workbook.save(source)
+
+    prepared = prepare_delivery_inputs(str(source), descriptions, str(tmp_path))
+
+    rep = pd.read_csv(prepared.batch_files["REP"], sep=";", dtype=str)
+    assert rep.loc[0, "Concept ID"] == "123456789"
+    assert rep.loc[0, "Description ID"] == "6557466016"
+
+    reconditioned = load_workbook(prepared.workbook)
+    rep_out = reconditioned["Description Replacements"]
+    assert rep_out["A2"].value == "123456789"
+    assert rep_out["B2"].value == "6557466016"
+
+
 def test_invalid_row_is_reported_and_valid_rows_are_kept(
     tmp_path: Path, descriptions: pd.DataFrame
 ) -> None:
