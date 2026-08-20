@@ -66,15 +66,21 @@ class Server:
 
         url = f"{self.endpoint}/metadata?mode=terminology"
         response = self.session.request("GET", url, auth=auth)
-        response.raise_for_status()
 
-        versions = list(jsonpath.findall('$codeSystem[?(@.uri=="http://snomed.info/sct")].version[*].code', response.json())) # noqa
+        versions = []
+        if response.ok:
+            versions = list(jsonpath.findall('$codeSystem[?(@.uri=="http://snomed.info/sct")].version[*].code', response.json())) # noqa
+        else:
+            # Certains serveurs (ex. Snowstorm, cf. IHTSDO/snowstorm#540) renvoient
+            # une erreur sur /metadata?mode=terminology au lieu d'ignorer le paramètre.
+            logger.info(f"Échec de la requête /metadata?mode=terminology ({response.status_code}), repli sur une recherche CodeSystem.")
 
         if not versions:
-            # Repli : certains serveurs (ex. Snowstorm) n'implémentent pas
-            # TerminologyCapabilities et ignorent `mode=terminology`, on
-            # récupère alors les versions via une recherche de CodeSystem.
-            logger.info("Aucune version trouvée via /metadata?mode=terminology, repli sur une recherche CodeSystem.")
+            # Repli : certains serveurs n'implémentent pas TerminologyCapabilities
+            # ou ignorent/rejettent `mode=terminology`, on récupère alors les
+            # versions via une recherche de CodeSystem.
+            if response.ok:
+                logger.info("Aucune version trouvée via /metadata?mode=terminology, repli sur une recherche CodeSystem.")
             url = f"{self.endpoint}/CodeSystem"
             response = self.session.request("GET", url, params={"url": "http://snomed.info/sct"}, auth=auth)
             response.raise_for_status()
