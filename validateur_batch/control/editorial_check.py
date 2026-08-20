@@ -534,7 +534,7 @@ def _check_bs8(df: pd.DataFrame, pt: pd.Series, syn: pd.Series) -> pd.DataFrame:
     """
     idx = df.loc[pt
                  & (df.loc[:, "FSN_no_sem"].str.contains("apex", regex=False, case=False))
-                 & (~df.loc[:, "term"].str.contains(r"(?:apex|pointe|bout|cime)", case=False))].index # noqa
+                 & (~df.loc[:, "term"].str.contains(r"(?:apex|pointe|bout|cime|sommet)", case=False))].index # noqa
 
     if not idx.empty:
         df = pd.merge(df, pd.DataFrame(data={"bs8": ["1"] * len(idx)}, index=idx),
