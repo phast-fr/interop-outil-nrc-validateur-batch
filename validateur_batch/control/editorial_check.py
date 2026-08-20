@@ -280,8 +280,10 @@ def _check_bs2(df: pd.DataFrame,  pt: pd.Series) -> pd.DataFrame:
         DataFrame du fichier avec une colonne identifiant les
         descriptions ne respectant pas la règle bs2.
     """
+    EXCEPTIONS = ["suture", "ginglyme"]
     idx = df.loc[pt & (df.loc[:, "FSN_no_sem"].str.contains("joint", regex=False, case=False))
-                 & (~df.loc[:, "term"].str.contains("(?:articulation|articulaire)", case=False))].index # noqa
+                 & (~df.loc[:, "term"].str.contains("(?:articulation|articulaire)", case=False))
+                 & (~df.loc[:, "term"].str.contains(rf"\b(?:{'|'.join(EXCEPTIONS)})", regex=True, case=False))].index # noqa
 
     if not idx.empty:
         df = pd.merge(df, pd.DataFrame(data={"bs2": ["1"] * len(idx)}, index=idx),

@@ -8,8 +8,8 @@ import pandas as pd
 @pytest.fixture
 def null() -> pd.DataFrame:
     return pd.DataFrame(
-        {"FSN": ["SNOMED CT Concept"], "term": ["Concept SNOMED CT"],
-         "acceptabilityId": ["PREFERRED"]}
+        {"FSN": ["SNOMED CT Concept"], "FSN_no_sem": ["SNOMED CT Concept"],
+         "term": ["Concept SNOMED CT"], "acceptabilityId": ["PREFERRED"]}
     )
 
 
@@ -77,7 +77,7 @@ def ar6(ar) -> pd.DataFrame:
 #######################################
 @pytest.fixture
 def bs() -> pd.DataFrame:
-    return pd.DataFrame(
+    df = pd.DataFrame(
         {"FSN": ["knee joint structure", "knee joint structure",
                  "entire hip region", "entire hip region", "part of hip zone",
                  "part of hip zone", "zone of cerebrum", "area of cerebrum",
@@ -116,6 +116,8 @@ def bs() -> pd.DataFrame:
                              "ACCEPTABLE", "PREFERRED", "PREFERRED", "PREFERRED",
                              "ACCEPTABLE", "ACCEPTABLE"]}
     )
+    df["FSN_no_sem"] = df["FSN"]
+    return df
 
 
 @pytest.fixture
