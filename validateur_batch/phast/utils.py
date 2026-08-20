@@ -1,4 +1,7 @@
+from typing import Iterable
+
 import pandas as pd
+from pandas.api.typing import NAType
 
 SHORT_ACCEPTABILITY = {
     "PREFERRED": "PT",
@@ -7,7 +10,7 @@ SHORT_ACCEPTABILITY = {
 MAIN_COLUMNS = ['id', 'active', '_type_', 'conceptId', 'FSN', 'FSN_no_sem', 'term', 'caseSignificanceId', 'acceptabilityId', 'errors', 'selected_rules']
 
 
-def combine_rule_selections (row:dict) -> str:
+def combine_rule_selections (row:dict) -> str | NAType:
     """Construit une chaîne résumant les règles sélectionnées pour une description.
 
     args:
@@ -23,7 +26,7 @@ def combine_rule_selections (row:dict) -> str:
         selection = pd.NA
     return selection
 
-def combine_rule_errors (row:dict) -> str:
+def combine_rule_errors (row:dict) -> str | NAType:
     """Construit une chaîne résumant les erreurs détectées pour une description.
 
     args:
@@ -34,12 +37,12 @@ def combine_rule_errors (row:dict) -> str:
     """
     error_keys = [key for key in row.keys() if (key not in MAIN_COLUMNS) and (not key.startswith("S_")) and (not key.startswith("E_") and row[key]=="1")]
     if len(error_keys) > 0:
-        errors = row["term"] + f" ({SHORT_ACCEPTABILITY[row['acceptabilityId']]})" + ": " + " ".join(error_keys)
+        errors = " ".join(error_keys) + ": " + row["term"] + f" ({SHORT_ACCEPTABILITY[row['acceptabilityId']]})"
     else:
         errors = pd.NA
     return errors
 
-def aggregate_combined(values):
+def aggregate_combined(values: Iterable[str | NAType]) -> str:
     """Concatène des valeurs non-nulles avec le séparateur ' | '.
 
     args:
