@@ -456,10 +456,16 @@ def _check_bs5(df: pd.DataFrame, bs: pd.Series, pt: pd.Series, syn: pd.Series) -
         DataFrame du fichier avec une colonne identifiant les
         descriptions ne respectant pas la règle bs5.
     """
+    # Exceptions prévues par ASCTED-20 : usage clinique consacré sans "région"
+    EXCEPTIONS_FSN = [
+        r"intramural region of ureter",
+        r"(?:attached|free) region of (?:\w+ )?gingiva",
+    ]
     idx = df.loc[pt & bs
                  & (df.loc[:, "FSN"].str.contains("region", regex=False, case=False))
-                 & (~df.loc[:, "term"].str.contains("région", regex=False, case=False))].index # noqa
-    
+                 & (~df.loc[:, "term"].str.contains("région", regex=False, case=False))
+                 & (~df.loc[:, "FSN"].str.contains(rf"(?:{'|'.join(EXCEPTIONS_FSN)})", regex=True, case=False))].index # noqa
+
     if not idx.empty:
         df = pd.merge(df, pd.DataFrame(data={"bs5": ["1"] * len(idx)}, index=idx),
                       how="left", left_index=True, right_index=True, validate="1:1")
