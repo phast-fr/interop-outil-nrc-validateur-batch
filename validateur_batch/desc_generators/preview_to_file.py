@@ -44,6 +44,11 @@ def write_val_file(val_file_path: Path, preview: pd.DataFrame):
             "FSN": preview.loc[mask, "FSN"],
         }
     )
+    # `preview` a une ligne par description existante : un concept ayant
+    # plusieurs descriptions actives (PT + synonymes) apparaît donc plusieurs
+    # fois avec le même Concept ID/FSN. VAL est une déclaration au niveau
+    # concept, donc on ne garde qu'une seule occurrence.
+    df = df.drop_duplicates(subset="Concept ID")
 
     df.to_csv(val_file_path, index=False, sep=";", quoting=csv.QUOTE_NONE, encoding='utf-8')
     df.to_excel(Path(val_file_path).with_suffix(".xlsx"), index=False)
