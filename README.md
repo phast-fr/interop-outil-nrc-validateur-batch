@@ -64,9 +64,7 @@ remplacements avant de lancer les contrôles habituels :
 Le dossier `recreated_inputs` contient le classeur reconditionné, les fichiers
 CSV compacts utilisés par le validateur et `conversion_report.csv`, ainsi que
 `conversion_errors.csv` si des remplacements ont été rejetés. Le classeur
-source n'est jamais modifié. Le fichier `--val` peut être fourni en complément
-car le classeur de modifications ne contient pas les concepts revus sans
-modification.
+source n'est jamais modifié.
 
 ## Génération automatique de descriptions
 
