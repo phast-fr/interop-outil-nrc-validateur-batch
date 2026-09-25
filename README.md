@@ -66,6 +66,14 @@ source n'est jamais modifié. Le fichier `--val` peut être fourni en complémen
 car le classeur de modifications ne contient pas les concepts revus sans
 modification.
 
+Les lignes REMP rejetées sont listées dans `recreated_inputs/conversion_errors.csv`
+(créé uniquement s'il y a des erreurs). Pour les ajouter dans un onglet
+`Logs REMP` du classeur `Logs *.xlsx` de l'outil de transformation :
+
+```shell
+./validateur_batch/delivery_log_integration.py "dossier_sauvegarde/recreated_inputs/conversion_errors.csv" "Logs AAAA-MM-JJ HH-MM.xlsx"
+```
+
 ## Génération automatique de descriptions
 
 L'option `--generate_auto_desc` déclenche la génération de descriptions supplémentaires à partir des règles éditoriales implémentées. Les fichiers produits sont écrits dans le dossier de sortie avec un horodatage :
