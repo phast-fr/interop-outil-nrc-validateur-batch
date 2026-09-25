@@ -48,8 +48,9 @@ Le projet nécessite plusieurs données en entrée :
 
 ### Reconditionnement d'une livraison finale
 
-L'argument `--delivery` applique la contrainte REMP ASCT-188 avant de lancer
-les contrôles habituels :
+L'argument `--delivery` prend en entrée le classeur de livraison produit par
+l'outil de transformation (`Fichier sortie *.xlsx`) et reconditionne ses
+remplacements avant de lancer les contrôles habituels :
 
 - un remplacement par une nouvelle traduction reste dans *Description Replacements* ;
 - un remplacement par un synonyme acceptable existant devient une promotion
@@ -61,18 +62,11 @@ les contrôles habituels :
 ```
 
 Le dossier `recreated_inputs` contient le classeur reconditionné, les fichiers
-CSV compacts utilisés par le validateur et `conversion_report.csv`. Le classeur
+CSV compacts utilisés par le validateur et `conversion_report.csv`, ainsi que
+`conversion_errors.csv` si des remplacements ont été rejetés. Le classeur
 source n'est jamais modifié. Le fichier `--val` peut être fourni en complément
 car le classeur de modifications ne contient pas les concepts revus sans
 modification.
-
-Les lignes REMP rejetées sont listées dans `recreated_inputs/conversion_errors.csv`
-(créé uniquement s'il y a des erreurs). Pour les ajouter dans un onglet
-`Logs REMP` du classeur `Logs *.xlsx` de l'outil de transformation :
-
-```shell
-./validateur_batch/delivery_log_integration.py "dossier_sauvegarde/recreated_inputs/conversion_errors.csv" "Logs AAAA-MM-JJ HH-MM.xlsx"
-```
 
 ## Génération automatique de descriptions
 
